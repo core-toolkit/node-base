@@ -107,7 +107,7 @@ module.exports = (Config) => {
 
   if (Config.db) {
     App.Clients.DbClient = MakeDbClient(Config.db);
-    App.Services.MigrationService = MakeMigrator(App.Clients.DbClient, Core.Cli);
+    App.Services.MigrationService = MakeMigrator(App.Clients.DbClient, App.Core.Cli);
   }
 
   const router = Router();
