@@ -1,8 +1,6 @@
 const fs = require('fs');
 const { relative, resolve } = require('path');
 
-const template = require('./migration-template');
-
 module.exports = (umzug, migrationsPath, Cli) => Cli.register([
   {
     name: 'migration:create',
@@ -21,8 +19,9 @@ module.exports = (umzug, migrationsPath, Cli) => Cli.register([
         .map((value, i) => (i === 1 ? String(value + 1).padStart(2, '0') : value))
         .join('');
 
+      const template = resolve(__dirname, 'migration-template.js');
       const path = resolve(migrationsPath, `${dateFormatted}-${slug}.js`);
-      fs.writeFileSync(path, template);
+      fs.copyFileSync(template, path);
       console.log(`New migration created at "${relative(process.cwd(), path)}"`);
     },
   },
