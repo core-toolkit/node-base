@@ -1,4 +1,4 @@
-const MakeCli = require('./core/Cli');
+const MakeCli = require('./core/cli');
 
 const HttpClient = require('./clients/HttpClient');
 const MakeDbClient = require('./clients/DbClient');
@@ -76,13 +76,17 @@ const MakeModel = require('./Model');
  * @callback MakeUseCase
  * @param {MakeuseCaseParams} params
  *
+ * @callback ApplyRoute
+ * @param {Router} router
+ * @param {AppControllers} controllers
+ *
  * @typedef ApplicationInterface
  * @property {(name: string, makeFn: MakeClient) => void} RegisterClient
  * @property {(name: string, makeFn: MakeService) => void} RegisterService
  * @property {(name: string, makeFn: MakeController) => void} RegisterController
  * @property {(name: string, makeFn: MakeModel) => void} RegisterModel
  * @property {(name: string, makeFn: MakeUseCase) => void} RegisterUseCase
- * @property {(router: Router, controllers: AppControllers) => void} ApplyRoute
+ * @property {(applyFn: ApplyRoute) => void} RegisterRoutes
  * @property {Function} StartServer
  * @property {Function} StartCli
  *
@@ -152,7 +156,7 @@ module.exports = (Config) => {
       const controller = makeFn(App.UseCases);
       register('Controllers', name, controller);
     },
-    ApplyRoute: (applyFn) => applyFn(router, App.Controllers),
+    RegisterRoutes: (applyFn) => applyFn(router, App.Controllers),
     StartServer: async () => {
       if (running) {
         throw new Error('Application is already running');

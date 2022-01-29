@@ -3,14 +3,13 @@ const { relative } = require('path');
 
 /**
  * @typedef Command
- * @property {Object} command
- * @property {String} command.name
- * @property {Function} command.exec
- * @property {String[]?} command.args
- * @property {String?} command.description
- * @property {String?} command.help
+ * @property {String} name
+ * @property {Function} exec
+ * @property {String[]?} args
+ * @property {Object.<string, String>?} defaults
+ * @property {String?} description
+ * @property {String?} help
  */
-
 
 const [, cli, supplpiedCmd, ...suppliedArgs] = process.argv;
 const userCli = process.env.npm_command ? 'npm run' : `${process.argv0} ${relative(process.cwd(), cli)}`;
@@ -44,7 +43,7 @@ module.exports = () => {
    */
   const getCmd = (name) => commands.find((cmd) => cmd.name === name);
 
-  const parseArgs = (args) => {
+  const parseArgs = (args, defaults) => {
     const parsed = {
       args: {},
       invalid: [],
@@ -52,7 +51,7 @@ module.exports = () => {
 
     for (let i = 0; i < args.length; ++i) {
       const arg = args[i];
-      const suppliedArg = suppliedArgs[i];
+      const suppliedArg = suppliedArgs[i] || defaults[arg];
       if (suppliedArg) {
         parsed.args[arg] = suppliedArg;
       } else {
@@ -107,11 +106,25 @@ module.exports = () => {
       assert(typeof command.exec === 'function', 'Property "exec" must be a callback function');
       assert(command.description && typeof command.description === 'string', 'Property "description" must be a non-empty string');
 
-      const fullCommand = Object.assign({
+      const full = Object.assign({
         args: [],
+        defaults: {},
         help: '',
       }, command);
-      commands.push(fullCommand);
+
+      assert(Array.isArray(full.args), 'Property "args" must be an array');
+      assert(full.defaults && typeof full.defaults === 'object', 'Property "defaults" must be an object');
+
+      for (let i = 0; i < full.args.length; ++i) {
+        const arg = full.args[i];
+        const index = arg.indexOf('=');
+        if (index !== -1) {
+          full.args[i] = arg.substring(0, index);
+          full.defaults[full.args[i]] = arg.substring(index + 1);
+        }
+      }
+
+      commands.push(full);
     },
 
     async start() {
@@ -122,13 +135,18 @@ module.exports = () => {
         process.exit(1);
       }
 
-      const parsed = parseArgs(cmd.args);
+      const parsed = parseArgs(cmd.args, cmd.defaults);
       if (parsed.error) {
         showHelp(parsed.error, cmd);
         process.exit(2);
       }
 
-      await cmd.exec(parsed.args);
+      try {
+        await cmd.exec(parsed.args);
+      } catch (e) {
+        console.error(`${e}`);
+        process.exit(1);
+      }
 
       process.exit(0);
     },
