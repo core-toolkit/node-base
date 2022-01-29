@@ -97,7 +97,7 @@ const execIfNotExists = (path, cmd, ...args) => {
  * @param {Boolean} overwrite
  */
 const copy = (path, overwrite = false) => {
-  if (overwrite || exists(...path)) {
+  if (overwrite || !exists(...path)) {
     fs.copyFileSync(resolveTemplate(path), resolve(path));
   }
 };
