@@ -16,7 +16,10 @@ module.exports = (sequelize, Cli) => {
     migrations: {
       glob: resolve(migrationsPath, '*.js'),
     },
-    context: sequelize.getQueryInterface(),
+    context: {
+      Sequelize,
+      query: sequelize.getQueryInterface(),
+    },
     storage: new SequelizeStorage({ sequelize }),
     logger: console,
   });
