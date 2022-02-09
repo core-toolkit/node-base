@@ -1,17 +1,19 @@
 /**
  * @param {Object} context
- * @param {Object.<string, Object>} context.Clients
- * @param {Object.<string, Object>} context.Models
- * @param {Object.<string, Object>} context.Services
- * @param {Object.<string, Object>} context.UseCases
+ * @param {Object.<string, Object>} context.Util
+ * @param {Object.<string, Object>} context.Core
+ * @param {Object.<string, Object>} context.Client
+ * @param {Object.<string, Object>} context.Model
+ * @param {Object.<string, Object>} context.Service
+ * @param {Object.<string, Object>} context.UseCase
  */
- module.exports = ({ Models: { __name__ } }) => {
-  const getAll = () => User.findAll();
+ module.exports = ({ Model: { __name__ } }) => {
+  const getAll = () => __name__.findAll();
 
-  const getById = (id) => User.findByPk(id);
+  const getById = (id) => __name__.findByPk(id);
 
   const create = async (author, name, value) => {
-    const __nameLower__ = await User.create({ author, name, value });
+    const __nameLower__ = await __name__.create({ author, name, value });
     return { id: __nameLower__.id };
   };
 

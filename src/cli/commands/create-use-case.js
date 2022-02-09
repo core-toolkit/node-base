@@ -1,9 +1,10 @@
-module.exports = ({ exists, template, addToRoot }) => ({ name }) => {
+module.exports = ({ name }, { exists, template, addToRoot }) => {
   if (!/^[A-Z][A-z0-9]*$/.test(name)) {
     throw new Error(`Invalid name "${name}"`);
   }
+  const basePath = 'src/application/use-cases';
   const filename = `${name}UseCase.js`;
-  const destination = `src/application/use-cases/${filename}`;
+  const destination = `${basePath}/${filename}`;
   if (exists(destination)) {
     throw new Error(`Use-case "${filename}" already exists`);
   }

@@ -1,7 +1,0 @@
-  db: {
-    username: process.env.POSTGRES_USER,
-    password: process.env.POSTGRES_PASS,
-    host: process.env.POSTGRES_HOST,
-    database: process.env.POSTGRES_DATABASE,
-    dialect: '__dialect__',
-  },
