@@ -9,8 +9,13 @@ module.exports = ({ name }, { exists, template, addToRoot }) => {
     throw new Error(`Service "${filename}" already exists`);
   }
 
+  const testFilename = `${name}Service.test.js`;
+  const testDestination = `${basePath}/${testFilename}`;
+
   template('src/infrastructure/Service.js', destination, { name });
+  template('src/infrastructure/Service.test.js', testDestination, { name });
   addToRoot('Service', name, './infrastructure/services');
 
   console.log(`Service created at "${destination}"`);
+  console.log(`Test created at "${testDestination}"`);
 };
