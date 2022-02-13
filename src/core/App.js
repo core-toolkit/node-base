@@ -145,14 +145,17 @@ module.exports = () => {
     });
   };
 
+  const initAll = () => Promise.all(Object.values(App.components)).then(() => { });
+
   const start = async () => {
     assert(!App.running, 'Application is already running');
     App.running = true;
-    await Promise.all(Object.values(App.components));
+    await initAll();
   };
 
   return {
     resolveDependencies,
+    initAll,
     registerType,
     appendTypeParameters,
     addTypeMiddleware,

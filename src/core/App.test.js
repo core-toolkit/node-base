@@ -132,6 +132,26 @@ describe('Application', () => {
     });
   });
 
+  describe('.initAll()', () => {
+    it('waits for all registered components to initialize', async () => {
+      const app = MakeApp();
+      const Test1 = jest.fn().mockReturnValue('foo');
+      const Test2 = jest.fn();
+
+      app.registerType('TestType1');
+      app.registerType('TestType2', 'TestType1');
+      app.register('TestType1', 'Test1', Test1);
+      app.register('TestType2', 'Test2', Test2);
+      await app.initAll();
+      expect(Test1).toHaveBeenCalledTimes(1);
+      expect(Test2).toHaveBeenCalledWith(expect.any(Object));
+      expect(Test2).toHaveBeenCalledTimes(1);
+      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
+        TestType1: expect.objectContaining({ Test1: 'foo' }),
+      }));
+    });
+  });
+
   describe('.start()', () => {
     it('starts the application', async () => {
       const app = MakeApp();
