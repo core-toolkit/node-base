@@ -11,6 +11,7 @@ class InvalidArgument extends Error { }
  * @property {String[]?} args
  * @property {Object.<string, String>?} defaults
  * @property {String[]?} optional
+ * @property {Boolean?} rest
  * @property {String?} description
  * @property {String?} help
  *
@@ -79,9 +80,13 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     };
 
     for (let i = 0; i < command.args.length; ++i) {
+      const isRest = command.args.length - i === 1 && command.rest;
       const arg = command.args[i];
-      const suppliedArg = args[i] || command.defaults[arg];
-      if (suppliedArg || command.optional.includes(arg)) {
+      const suppliedArg = (
+        isRest ? (args.length >= command.args.length ? args.slice(i) : undefined) : args[i]
+      ) || command.defaults[arg];
+
+      if ((isRest && suppliedArg.length) || (!isRest && suppliedArg) || command.optional.includes(arg)) {
         parsed.args[arg] = suppliedArg;
       } else {
         parsed.invalid.push(arg);
@@ -109,30 +114,48 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
       args: [],
       defaults: {},
       optional: [],
+      rest: false,
       help: '',
     }, command);
 
     assert(Array.isArray(full.args), 'Property "args" must be an array');
     assert(full.defaults && typeof full.defaults === 'object', 'Property "defaults" must be an object');
     assert(Array.isArray(full.optional), 'Property "optional" must be an array');
+    assert(typeof full.rest === 'boolean', 'Property "rest" must be a boolean');
 
     for (let i = 0; i < full.args.length; ++i) {
-      const arg = full.args[i];
-      const index = arg.indexOf('=');
+      let optional = false, defaultValue = undefined;
 
-      if (arg[0] === '[' && arg[arg.length - 1] === ']') {
-        full.args[i] = arg.substring(1, arg.length - 1);
+      if (full.args[i][0] === '[' && full.args[i][full.args[i].length - 1] === ']') {
+        optional = true;
+        full.args[i] = full.args[i].substring(1, full.args[i].length - 1);
+      }
+
+      const defaultIndex = full.args[i].indexOf('=');
+      if (defaultIndex !== -1) {
+        optional = true;
+        defaultValue = full.args[i].substring(defaultIndex + 1);
+        full.args[i] = full.args[i].substring(0, defaultIndex);
+      }
+
+      if (full.args[i].indexOf('...') === 0) {
+        assert(full.args.length - i === 1, 'The rest argument must always come last');
+        full.rest = true;
+        defaultValue = defaultValue !== undefined ? [defaultValue] : [];
+        full.args[i] = full.args[i].substring(3);
+      }
+
+      optional ||= full.defaults[full.args[i]] !== undefined;
+
+      full.defaults[full.args[i]] = defaultValue ?? full.defaults[full.args[i]];
+      if (optional) {
         full.optional.push(full.args[i]);
-      } else if (index !== -1) {
-        full.args[i] = arg.substring(0, index);
-        full.optional.push(full.args[i]);
-        full.defaults[full.args[i]] = arg.substring(index + 1);
       }
     }
 
     const firstOptional = full.args.findIndex((v) => full.optional.includes(v));
     const lastMandatory = full.args.reduceRight((idx, v, i) => (idx > -1 || full.optional.includes(v) ? idx : i), -1);
-    assert(firstOptional === -1 || firstOptional > lastMandatory, 'Optional arguments and defaults must come last');
+    assert(firstOptional === -1 || firstOptional > lastMandatory, 'Required arguments must come before optional ones');
 
     commands.push(full);
   };

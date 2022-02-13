@@ -65,6 +65,25 @@ describe('Cli', () => {
       });
     });
 
+    it('registers commands with rest arguments', () => {
+      const cli = Cli(app);
+      cli.register([
+        {
+          name: 'Test1',
+          args: ['foo', '...bar'],
+          exec: () => { },
+          description: 'Test command 1',
+        },
+        {
+          name: 'Test2',
+          args: ['foo', 'bar'],
+          rest: true,
+          exec: () => { },
+          description: 'Test command 2',
+        },
+      ]);
+    });
+
     it('registers commands with additional instructions', () => {
       const cli = Cli(app);
       cli.register({
@@ -117,29 +136,29 @@ describe('Cli', () => {
     it('does not register commands with missing or invalid functions', () => {
       const cli = Cli(app);
       expect(() => cli.register({
-        name: 'Test',
-        description: 'Test command',
+        name: 'Test 1',
+        description: 'Test command 1',
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test 2',
         exec: 'foo',
-        description: 'Test command',
+        description: 'Test command 2',
       })).toThrow();
     });
 
     it('does not register commands with missing or invalid descriptions', () => {
       const cli = Cli(app);
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test1',
         exec: () => { },
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test2',
         exec: () => { },
         description: '',
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test3',
         exec: () => { },
         description: 123,
       })).toThrow();
@@ -148,28 +167,32 @@ describe('Cli', () => {
     it('does not register commands with missing or invalid arguments', () => {
       const cli = Cli(app);
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test1',
         args: undefined,
-        description: 'Test command',
+        description: 'Test command 1',
+        exec: () => { },
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test2',
         args: 'foo',
-        description: 'Test command',
+        description: 'Test command 2',
+        exec: () => { },
       })).toThrow();
     });
 
     it('does not register commands with missing or invalid defaults', () => {
       const cli = Cli(app);
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test1',
         defaults: undefined,
-        description: 'Test command',
+        description: 'Test command 1',
+        exec: () => { },
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test2',
         defaults: 'foo',
-        description: 'Test command',
+        description: 'Test command 2',
+        exec: () => { },
       })).toThrow();
     });
 
@@ -186,14 +209,16 @@ describe('Cli', () => {
     it('does not register commands with missing or invalid optional arguments', () => {
       const cli = Cli(app);
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test1',
         optional: undefined,
-        description: 'Test command',
+        description: 'Test command 1',
+        exec: () => { },
       })).toThrow();
       expect(() => cli.register({
-        name: 'Test',
+        name: 'Test2',
         optional: 'foo',
-        description: 'Test command',
+        description: 'Test command 2',
+        exec: () => { },
       })).toThrow();
     });
 
@@ -206,6 +231,38 @@ describe('Cli', () => {
         description: 'Test command',
       })).toThrow();
     });
+
+    it('does not register commands with missing or invalid rest arguments', () => {
+      const cli = Cli(app);
+      expect(() => cli.register({
+        name: 'Test1',
+        rest: undefined,
+        description: 'Test command 1',
+        exec: () => { },
+      })).toThrow();
+      expect(() => cli.register({
+        name: 'Test2',
+        rest: 'foo',
+        description: 'Test command 2',
+        exec: () => { },
+      })).toThrow();
+    });
+
+    it('does not register commands with non-trailing rest arguments', () => {
+      const cli = Cli(app);
+      expect(() => cli.register({
+        name: 'Test1',
+        args: ['...foo', 'bar'],
+        exec: () => { },
+        description: 'Test command 1',
+      })).toThrow();
+      expect(() => cli.register({
+        name: 'Test2',
+        args: ['foo', '[...bar]', '[baz]'],
+        exec: () => { },
+        description: 'Test command 2',
+      })).toThrow();
+    });
   });
 
   describe('.run()', () => {
@@ -214,19 +271,46 @@ describe('Cli', () => {
       const mock = jest.fn();
 
       cli.register({
-        name: 'Test',
+        name: 'Test1',
         args: ['arg1', 'arg2', 'arg3=baz', '[arg4]'],
         defaults: { arg2: 'bar' },
         exec: mock,
-        description: 'Test command',
+        description: 'Test command 1',
       });
 
-      await cli.run('Test', 'foo');
-      expect(mock).toHaveBeenCalledWith(expect.objectContaining({
+      await cli.run('Test1', 'foo');
+      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
         arg1: 'foo',
         arg2: 'bar',
         arg3: 'baz',
         arg4: undefined,
+      }), 'cli-iface');
+
+      cli.register({
+        name: 'Test2',
+        args: ['arg1', '[arg2]', '[...arg3=bar]'],
+        exec: mock,
+        description: 'Test command 2',
+      });
+
+      await cli.run('Test2', 'foo');
+      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
+        arg1: 'foo',
+        arg2: undefined,
+        arg3: ['bar'],
+      }), 'cli-iface');
+
+      cli.register({
+        name: 'Test3',
+        args: ['arg1', '...arg2'],
+        exec: mock,
+        description: 'Test command 3',
+      });
+
+      await cli.run('Test3', 'foo', 'bar', 'baz');
+      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
+        arg1: 'foo',
+        arg2: ['bar', 'baz'],
       }), 'cli-iface');
     });
 
@@ -241,13 +325,23 @@ describe('Cli', () => {
       const mock = jest.fn();
 
       cli.register({
-        name: 'Test',
+        name: 'Test1',
         args: ['foo'],
         exec: mock,
-        description: 'Test command',
+        description: 'Test command 1',
       });
 
-      await expect(cli.run('Test')).rejects.toBeInstanceOf(cli.InvalidArgument);
+      await expect(cli.run('Test1')).rejects.toBeInstanceOf(cli.InvalidArgument);
+      expect(mock).not.toHaveBeenCalled();
+
+      cli.register({
+        name: 'Test2',
+        args: ['...foo'],
+        exec: mock,
+        description: 'Test command 2',
+      });
+
+      await expect(cli.run('Test2')).rejects.toBeInstanceOf(cli.InvalidArgument);
       expect(mock).not.toHaveBeenCalled();
     });
   });
