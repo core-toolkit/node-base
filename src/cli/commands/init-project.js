@@ -15,7 +15,7 @@ module.exports = (_, { copy, exec, exists, packageJSON, addPackage }) => {
     pkg.devDependencies ??= {};
     pkg.scripts.start ??= 'node src/index.js';
     pkg.scripts.cli = 'node-base-cli';
-    pkg.scripts.test = 'jest --detectOpenHandles';
+    pkg.scripts.test = 'node-base-cli test';
   });
 
   addPackage('node-base');

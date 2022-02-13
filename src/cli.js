@@ -55,6 +55,13 @@ const registerCommands = (cli, project) => {
       description: `Create a new ${key}`,
       exec: createComponents[key],
     }));
+
+  cli.register({
+    name: 'test',
+    args: ['[...paths]'],
+    description: 'Run the test suite',
+    exec({ paths }, { exec }) { exec('jest', '--detectOpenHandles', ...paths); },
+  })
 };
 
 (async (app) => {
