@@ -25,6 +25,7 @@ module.exports = (_, { copy, exec, exists, packageJSON, addPackage }) => {
   copy('.gitignore');
   copy('.dockerignore');
   copy('Dockerfile');
+  copy('jest.config.js');
   copy('src/config.js');
   copy('src/index.js');
   copy('src/root.js');
