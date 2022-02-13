@@ -54,6 +54,17 @@ describe('Cli', () => {
       });
     });
 
+    it('registers commands with optional arguments', () => {
+      const cli = Cli(app);
+      cli.register({
+        name: 'Test',
+        args: ['foo', 'bar', '[baz]'],
+        optional: ['bar'],
+        exec: () => { },
+        description: 'Test command',
+      });
+    });
+
     it('registers commands with additional instructions', () => {
       const cli = Cli(app);
       cli.register({
@@ -161,6 +172,40 @@ describe('Cli', () => {
         description: 'Test command',
       })).toThrow();
     });
+
+    it('does not register commands with non-trailing defaults', () => {
+      const cli = Cli(app);
+      expect(() => cli.register({
+        name: 'Test',
+        args: ['foo=123', 'bar'],
+        exec: () => { },
+        description: 'Test command',
+      })).toThrow();
+    });
+
+    it('does not register commands with missing or invalid optional arguments', () => {
+      const cli = Cli(app);
+      expect(() => cli.register({
+        name: 'Test',
+        optional: undefined,
+        description: 'Test command',
+      })).toThrow();
+      expect(() => cli.register({
+        name: 'Test',
+        optional: 'foo',
+        description: 'Test command',
+      })).toThrow();
+    });
+
+    it('does not register commands with non-trailing optional arguments', () => {
+      const cli = Cli(app);
+      expect(() => cli.register({
+        name: 'Test',
+        args: ['[foo]', 'bar'],
+        exec: () => { },
+        description: 'Test command',
+      })).toThrow();
+    });
   });
 
   describe('.run()', () => {
@@ -170,7 +215,7 @@ describe('Cli', () => {
 
       cli.register({
         name: 'Test',
-        args: ['arg1', 'arg2', 'arg3=baz'],
+        args: ['arg1', 'arg2', 'arg3=baz', '[arg4]'],
         defaults: { arg2: 'bar' },
         exec: mock,
         description: 'Test command',
@@ -181,6 +226,7 @@ describe('Cli', () => {
         arg1: 'foo',
         arg2: 'bar',
         arg3: 'baz',
+        arg4: undefined,
       }), 'cli-iface');
     });
 

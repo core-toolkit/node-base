@@ -10,6 +10,7 @@ class InvalidArgument extends Error { }
  * @property {Function} exec
  * @property {String[]?} args
  * @property {Object.<string, String>?} defaults
+ * @property {String[]?} optional
  * @property {String?} description
  * @property {String?} help
  *
@@ -80,7 +81,7 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     for (let i = 0; i < command.args.length; ++i) {
       const arg = command.args[i];
       const suppliedArg = args[i] || command.defaults[arg];
-      if (suppliedArg) {
+      if (suppliedArg || command.optional.includes(arg)) {
         parsed.args[arg] = suppliedArg;
       } else {
         parsed.invalid.push(arg);
@@ -107,20 +108,31 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     const full = Object.assign({
       args: [],
       defaults: {},
+      optional: [],
       help: '',
     }, command);
 
     assert(Array.isArray(full.args), 'Property "args" must be an array');
     assert(full.defaults && typeof full.defaults === 'object', 'Property "defaults" must be an object');
+    assert(Array.isArray(full.optional), 'Property "optional" must be an array');
 
     for (let i = 0; i < full.args.length; ++i) {
       const arg = full.args[i];
       const index = arg.indexOf('=');
-      if (index !== -1) {
+
+      if (arg[0] === '[' && arg[arg.length - 1] === ']') {
+        full.args[i] = arg.substring(1, arg.length - 1);
+        full.optional.push(full.args[i]);
+      } else if (index !== -1) {
         full.args[i] = arg.substring(0, index);
+        full.optional.push(full.args[i]);
         full.defaults[full.args[i]] = arg.substring(index + 1);
       }
     }
+
+    const firstOptional = full.args.findIndex((v) => full.optional.includes(v));
+    const lastMandatory = full.args.reduceRight((idx, v, i) => (idx > -1 || full.optional.includes(v) ? idx : i), -1);
+    assert(firstOptional === -1 || firstOptional > lastMandatory, 'Optional arguments and defaults must come last');
 
     commands.push(full);
   };
