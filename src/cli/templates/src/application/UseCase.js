@@ -6,6 +6,7 @@
  * @param {Object.<string, Object>} context.Model
  * @param {Object.<string, Object>} context.Service
  * @param {Object.<string, Object>} context.UseCase
+ * @param {Object.<string, (...arg: any) => void>} context.Log
  */
  module.exports = ({ Model: { __name__ } }) => {
   const getAll = () => __name__.findAll();

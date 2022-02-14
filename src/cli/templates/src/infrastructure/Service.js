@@ -4,6 +4,7 @@
  * @param {Object.<string, Object>} context.Core
  * @param {Object.<string, Object>} context.Client
  * @param {Object.<string, Object>} context.Model
+ * @param {Object.<string, (...arg: any) => void>} context.Log
  */
 module.exports = ({ Core: { Config } }) => {
   const isAllowed = (code) => Config.__name__.allowed.includes(code);

@@ -2,7 +2,8 @@
  * @param {Object} context
  * @param {Object.<string, Object>} context.Util
  * @param {Object.<string, Object>} context.Core
- * @returns
+ * @param {Object.<string, (...arg: any) => void>} context.Log
+ * @returns {Object.<string, Function>}
  */
 module.exports = ({ Core: { Config, ApiClient } }) => {
   const client = ApiClient(Config.__name__ApiBaseUrl);

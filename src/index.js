@@ -42,5 +42,12 @@ module.exports = (Config, ...middleware) => {
 
   app.register('Service', 'CacheService', () => CacheService());
 
+  app.addMiddleware((makeFn, context, _, name) => {
+    if (context.Core?.Logger) {
+      return (ctx) => makeFn({ ...ctx, Log: context.Core.Logger[name] });
+    }
+    return makeFn;
+  });
+
   return middleware.reduce((composed, compose) => compose(composed), app);
 };
