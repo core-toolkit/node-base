@@ -10,6 +10,7 @@ module.exports = () => {
   const App = {
     components: {},
     types: {},
+    globalMiddleware: [],
     running: false,
   };
 
@@ -81,6 +82,15 @@ module.exports = () => {
   };
 
   /**
+   * @param {(next: Function, app: TypeCollection, type: String) => Function} middleware
+   */
+  const addMiddleware = (middleware) => {
+    assertTypeof('Middleware', middleware, 'function');
+    App.globalMiddleware.push(middleware);
+  };
+
+
+  /**
    * @param {String} type
    * @param  {...String} params
    */
@@ -137,6 +147,9 @@ module.exports = () => {
 
     App.components[component] = resolveDependencies(App.types[type].params).then(async (params) => {
       let next = makeFn;
+      for (const middleware of App.globalMiddleware) {
+        next = await middleware(next, params, type, name);
+      }
       for (const middleware of App.types[type].middleware) {
         next = await middleware(next, params);
       }
@@ -156,6 +169,7 @@ module.exports = () => {
     resolveDependencies,
     initAll,
     registerType,
+    addMiddleware,
     appendTypeParameters,
     addTypeMiddleware,
     getTypes,

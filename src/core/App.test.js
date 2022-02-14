@@ -42,6 +42,63 @@ describe('Application', () => {
     });
   });
 
+  describe('.addMiddleware()', () => {
+    it('registers custom registration handler middleware', async () => {
+      const app = MakeApp();
+      app.registerType('TestType1');
+      app.registerType('TestType2', 'TestType1');
+      app.registerType('TestType3', 'TestType2');
+
+      app.addMiddleware((makeFn, context, type) => {
+        if (type === 'TestType2') return () => makeFn(context.TestType1);
+        return makeFn;
+      });
+      app.addMiddleware((makeFn, context, type, name) => {
+        if (type === 'TestType2') return { ...makeFn(), extra: name };
+        return makeFn(context, 'foo');
+      });
+
+      const Test1 = jest.fn(() => 'bar');
+      const Test2 = jest.fn(() => ({ qux: 123 }));
+      const Test3 = jest.fn();
+
+      app.register('TestType1', 'Test1', Test1);
+      app.register('TestType2', 'Test2', Test2);
+      app.register('TestType3', 'Test3', Test3);
+      await app.start();
+
+      expect(Test1).toHaveBeenCalledWith(expect.any(Object), 'foo');
+      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({ Test1: 'bar' }));
+      expect(Test3).toHaveBeenCalledWith(
+        expect.objectContaining({
+          TestType2: {
+            Test2: { qux: 123, extra: 'Test2' },
+          },
+        }),
+        'foo',
+      );
+    });
+
+    it('does not register invalid middleware', async () => {
+      const app = MakeApp();
+      app.registerType('TestType1');
+      app.registerType('TestType2', 'TestType1');
+
+      expect(() => app.addMiddleware('TestType', 123)).toThrow();
+
+      const Test1 = 'foo';
+      const Test2 = jest.fn();
+
+      app.register('TestType1', 'Test1', () => Test1);
+      app.register('TestType2', 'Test2', Test2);
+      await app.start();
+
+      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
+        TestType1: expect.objectContaining({ Test1 }),
+      }));
+    });
+  });
+
   describe('.appendTypeParameters()', () => {
     it('registers additional parameters for existing types', async () => {
       const app = MakeApp();

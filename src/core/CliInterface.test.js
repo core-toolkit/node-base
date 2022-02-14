@@ -2,7 +2,7 @@ const CliInterface = require('./CliInterface');
 const Str = require('../utils/Str');
 
 
-const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addPackage'];
+const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addPackage'];
 
 const files = {
   '/base/foo.txt': 'test foo',
