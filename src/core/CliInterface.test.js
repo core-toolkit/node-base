@@ -313,6 +313,32 @@ module.exports = (Config) => {
     });
   });
 
+  describe('.addAppToRoot()', () => {
+    it('composes another application into the current one', () => {
+      iface.addAppToRoot('Qux');
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
+const MakeApp = require('node-base');
+const DbApp = require('node-base-db');
+const MakeQuxApp = require('node-base-qux');
+
+const FooClient = require('./infrastructure/clients/FooClient.js');
+
+const BarUseCase = require('./application/use-cases/BarUseCase.js');
+const BazUseCase = require('./application/use-cases/BazUseCase.js');
+
+module.exports = (Config) => {
+  const App = MakeApp(Config, DbApp, MakeQuxApp);
+
+  App.register('Client', 'FooClient', FooClient);
+
+  App.register('UseCase', 'BarUseCase', BarUseCase);
+  App.register('UseCase', 'BazUseCase', BazUseCase);
+
+  return App;
+};`);
+    });
+  });
+
   describe('.addPackage()', () => {
     it('installs new packages', () => {
       iface.addPackage('foo');

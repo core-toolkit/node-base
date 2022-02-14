@@ -181,6 +181,14 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
 
     /**
      * @param {String} name
+     * @param {String} pkg
+     */
+    addAppToRoot: (name, pkg = `node-base-${name.toLowerCase()}`) => {
+      iface.addToRoot('App', name, pkg, 'src/root-register-app.js', /MakeApp\([^)]+/, 'src/root-require-app.js', /App = require[^;]+;\n/);
+    },
+
+    /**
+     * @param {String} name
      * @param {Boolean} dev
      * @param {Object} args
      */
