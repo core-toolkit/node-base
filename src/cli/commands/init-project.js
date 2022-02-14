@@ -13,7 +13,11 @@ module.exports = (_, { copy, exec, exists, packageJSON, addPackage }) => {
     pkg.main = 'src/index.js';
     pkg.dependencies ??= {};
     pkg.devDependencies ??= {};
-    pkg.scripts.start ??= 'node src/index.js';
+    pkg.nodeBase ??= {
+      version: 1,
+      packages: [],
+    };
+    pkg.scripts.start = 'node src/index.js';
     pkg.scripts.cli = 'node-base-cli';
     pkg.scripts.test = 'node-base-cli test';
   });

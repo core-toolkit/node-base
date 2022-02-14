@@ -16,7 +16,8 @@ const files = {
   '/base/packages/node-base-foo/src/cli/templates/config.js': 'exports.foo = __num__;\n',
   '/base/packages/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
   '/base/packages/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
-  '/base/package.json': '{ "foo": "bar", "baz": 123 }',
+  '/base/packages/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
+  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":1,"packages":["node-base-foo","node-base-baz"]}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
 const MakeApp = require('node-base');
@@ -172,7 +173,18 @@ describe('CliInterface', () => {
         pkg.abc = [];
         delete pkg.baz;
       });
-      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', '{\n  "foo": "test",\n  "abc": []\n}');
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "test",
+  "nodeBase": {
+    "version": 1,
+    "packages": [
+      "node-base-foo",
+      "node-base-baz"
+    ]
+  },
+  "abc": []
+}`);
     });
   });
 
@@ -348,7 +360,19 @@ module.exports = (Config) => {
         expect.stringContaining('/foo.git'),
         'packages/foo/',
       ]), expect.any(Object));
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', expect.arrayContaining(['i', 'packages/foo/']), expect.any(Object));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "version": 1,
+    "packages": [
+      "node-base-foo",
+      "node-base-baz",
+      "foo"
+    ]
+  }
+}`);
     });
 
     it('re-installs existing packages', () => {
@@ -360,6 +384,18 @@ module.exports = (Config) => {
         'packages/node-base-baz/',
       ]), expect.any(Object));
       expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', expect.arrayContaining(['i', 'packages/node-base-baz/']), expect.any(Object));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "version": 1,
+    "packages": [
+      "node-base-foo",
+      "node-base-baz"
+    ]
+  }
+}`);
     });
 
     it('installs dev packages', () => {
@@ -371,6 +407,19 @@ module.exports = (Config) => {
         'packages/foo/',
       ]), expect.any(Object));
       expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', expect.arrayContaining(['i', '-D', 'packages/foo/']), expect.any(Object));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "version": 1,
+    "packages": [
+      "node-base-foo",
+      "node-base-baz",
+      "foo"
+    ]
+  }
+}`);
     });
 
     it('runs initialization scripts for packages that include one', () => {
@@ -379,6 +428,25 @@ module.exports = (Config) => {
 
       iface.addPackage('node-base-foo', false, 'foo');
       expect(mock).toHaveBeenLastCalledWith('foo', iface);
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "version": 1,
+    "packages": [
+      "node-base-foo",
+      "node-base-baz"
+    ]
+  }
+}`);
+    });
+
+    it('does not finalize packages on failure', () => {
+      jest.mock('/base/packages/node-base-qux/src/cli/commands/init.js', () => () => { throw new Error(); }, { virtual: true });
+
+      expect(() => iface.addPackage('node-base-qux', false, 'foo')).toThrow();
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
   });
 });

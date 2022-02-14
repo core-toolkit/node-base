@@ -1,3 +1,4 @@
+const { resolve } = require('path');
 const Project = require('./Project');
 const props = [
   ['cmd', 'string'],
@@ -9,6 +10,7 @@ const props = [
   ['name', 'string'],
   ['initialized', 'boolean'],
   ['packages', 'array'],
+  ['nodeBase', 'object'],
 ];
 
 describe('Project', () => {
@@ -45,10 +47,17 @@ describe('Project', () => {
   });
 
   it('identifies projects running under npm', () => {
+    const nodeBase = {
+      version: 1,
+      packages: ['api', 'mq'],
+    };
+    jest.mock('../../package.json', () => ({ ...jest.requireActual('../../package.json'), nodeBase }));
+
     const project = Project({ env: { npm_command: 'run-script '}, cwd: () => __dirname });
     expect(project.cmd).toBe('npm run cli');
     expect(project.path).not.toBe(__dirname);
     expect(project.name).toBe('node-base');
     expect(project.initialized).toBe(true);
+    expect(project.nodeBase).toEqual(nodeBase);
   });
 });

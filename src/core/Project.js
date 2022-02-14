@@ -6,6 +6,10 @@ const { basename, dirname, resolve } = require('path');
  * @property {() => String} cwd
  * @property {Object.<string, String>} env
  *
+ * @typedef NodeBaseProject
+ * @property {Number} version
+ * @property {String[]} packages
+ *
  * @typedef Project
  * @property {String} cmd
  * @property {String} path
@@ -14,6 +18,7 @@ const { basename, dirname, resolve } = require('path');
  * @property {String} configPath
  * @property {String} name
  * @property {boolean} initialized
+ * @property {NodeBaseProject} nodeBase
  *
  * @param {Process} process
  * @returns {Project}
@@ -27,6 +32,7 @@ module.exports = (process) => {
     name: basename(cwd),
     initialized: true,
     packages: [],
+    nodeBase: {},
   };
 
   while (!fs.existsSync(resolve(project.path, 'package.json'))) {
@@ -47,6 +53,7 @@ module.exports = (process) => {
     const packageJson = require(project.jsonPath);
     project.name = packageJson.name;
     project.packages = Object.keys(packageJson.dependencies);
+    project.nodeBase = packageJson.nodeBase;
   }
 
   return project;

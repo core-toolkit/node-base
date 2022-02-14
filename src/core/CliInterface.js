@@ -208,6 +208,11 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         const initFn = require(iface.resolve(initPath));
         initFn(args, iface);
       }
+      iface.packageJSON((pkg) => {
+        if (!pkg.nodeBase.packages.includes(name)) {
+          pkg.nodeBase.packages.push(name);
+        }
+      });
     },
   };
 
