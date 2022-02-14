@@ -132,7 +132,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      * @param {String} name
      * @param {String} path
      */
-    addToRoot: (type, name, path, reqTpl = 'src/root-require.js', reqRgx = null, regTpl = 'src/root-register.js', regRgx = null,) => {
+    addToRoot: (type, name, path, regTpl = 'src/root-register.js', regRgx = null, reqTpl = 'src/root-require.js', reqRgx = null) => {
       const componentOrder = getTypes().reverse().concat('App');
       const startFrom = componentOrder.indexOf(type);
       assert(startFrom !== -1, `Unknown type '${type}'`);

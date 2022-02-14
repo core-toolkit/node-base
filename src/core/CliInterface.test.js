@@ -14,6 +14,8 @@ const files = {
   '/base/packages/node-base-baz/src/cli/templates/foo/bar.txt': 'test bar',
   '/base/packages/node-base-foo/src/cli/commands/init.js': 'module.exports = () => {};',
   '/base/packages/node-base-foo/src/cli/templates/config.js': 'exports.foo = __num__;\n',
+  '/base/packages/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
+  '/base/packages/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
   '/base/package.json': '{ "foo": "bar", "baz": 123 }',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
@@ -280,11 +282,11 @@ module.exports = (Config) => {
     });
 
     it('adds an app middleware with custom partials and matchers', () => {
-      iface.addToRoot('App', 'Qux', 'node-base-qux', 'src/root-require-app.js', /App = require[^;]+;\n/, 'src/root-register-app.js', /MakeApp\([^)]+/);
+      iface.addToRoot('App', 'Qux', '123', 'foo:register.js', /{\n/, 'foo:require.js', /^/);
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
+const Qux = 123;
 const MakeApp = require('node-base');
 const DbApp = require('node-base-db');
-const MakeQuxApp = require('node-base-qux');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -292,7 +294,9 @@ const BarUseCase = require('./application/use-cases/BarUseCase.js');
 const BazUseCase = require('./application/use-cases/BazUseCase.js');
 
 module.exports = (Config) => {
-  const App = MakeApp(Config, DbApp, MakeQuxApp);
+  console.log(Qux);
+
+  const App = MakeApp(Config, DbApp);
 
   App.register('Client', 'FooClient', FooClient);
 

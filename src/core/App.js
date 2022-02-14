@@ -45,7 +45,6 @@ module.exports = () => {
    *  b: { z: Component<b.z>, ... },
    * }
    * @param {String[]} types
-   * @param {String} skip
    * @returns {Promise<TypeCollection>}
    */
   const resolveDependencies = async (types) => {
