@@ -60,7 +60,10 @@ const registerCommands = (cli, project) => {
     name: 'test',
     args: ['[...paths]'],
     description: 'Run the test suite',
-    exec({ paths }, { exec }) { exec('jest', '--detectOpenHandles', ...paths); },
+    exec({ paths }, { exec }) {
+      const { status } = exec('jest', '--detectOpenHandles', ...paths);
+      return status;
+    },
   })
 };
 
@@ -86,7 +89,8 @@ const registerCommands = (cli, project) => {
 
   const [,, cmd, ...args] = process.argv;
   try {
-    await Cli.run(cmd, ...args);
+    const code = await Cli.run(cmd, ...args);
+    process.exit(code);
   } catch (e) {
     if (e instanceof Cli.InvalidInvocation) {
       console.log(Cli.usage(args[0]));

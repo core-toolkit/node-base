@@ -18,11 +18,13 @@ class InvalidInvocation extends Error { }
  *
  * @typedef Cli
  * @property {(command: Command|Command[]) => void} register
- * @property {(cmd: String, ...args: String) => Promise} run
+ * @property {(cmd: String, ...args: String) => Promise<Number>} run
  * @property {(cmd: String|null) => String} usage
+ * @property {() => String[]} usage
  * @property {MissingCommand} MissingCommand
  * @property {InvalidCommand} InvalidCommand
  * @property {InvalidArgument} InvalidArgument
+ * @property {InvalidInvocation} InvalidInvocation
  *
  * @typedef Table
  * @property {(...cols: String) => void} addRow
@@ -193,7 +195,8 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     }
 
     process.chdir(Project.path);
-    await command.exec(parsed.args, CliInterface, { list, run });
+    const code = await command.exec(parsed.args, CliInterface, { list, run });
+    return Number.isInteger(code) ? code : 0;
   };
 
   const usage = (cmd) => {

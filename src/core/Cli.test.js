@@ -274,11 +274,11 @@ describe('Cli', () => {
         name: 'Test1',
         args: ['arg1', 'arg2', 'arg3=baz', '[arg4]'],
         defaults: { arg2: 'bar' },
-        exec: mock,
+        exec: mock.mockReturnValueOnce(123),
         description: 'Test command 1',
       });
 
-      await cli.run('Test1', 'foo');
+      await expect(cli.run('Test1', 'foo')).resolves.toBe(123);
       expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
         arg1: 'foo',
         arg2: 'bar',
@@ -293,7 +293,7 @@ describe('Cli', () => {
         description: 'Test command 2',
       });
 
-      await cli.run('Test2', 'foo');
+      await expect(cli.run('Test2', 'foo')).resolves.toBe(0);
       expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
         arg1: 'foo',
         arg2: undefined,
