@@ -10,6 +10,7 @@ module.exports = ({ name }, { exists, template, addToRoot }) => {
   }
 
   template('src/infrastructure/Client.js', destination, { name });
+  addToConfig('src/config-client.js', { name, nameUpper: name.toUpperCase() });
   addToRoot('Client', name, './infrastructure/clients');
 
   console.log(`Client created at "${destination}"`);

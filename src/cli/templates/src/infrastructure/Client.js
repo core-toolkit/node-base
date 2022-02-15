@@ -6,7 +6,7 @@
  * @returns {Object.<string, Function>}
  */
 module.exports = ({ Core: { Config, ApiClient } }) => {
-  const client = ApiClient(Config.__name__ApiBaseUrl);
+  const client = ApiClient(Config.__name__Client.apiBaseUrl);
 
   return {
     create: (name, value) => client({ url: '/item', method: 'POST', data: { name, value } }),
