@@ -284,7 +284,7 @@ describe('Cli', () => {
         arg2: 'bar',
         arg3: 'baz',
         arg4: undefined,
-      }), 'cli-iface');
+      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
 
       cli.register({
         name: 'Test2',
@@ -298,7 +298,7 @@ describe('Cli', () => {
         arg1: 'foo',
         arg2: undefined,
         arg3: ['bar'],
-      }), 'cli-iface');
+      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
 
       cli.register({
         name: 'Test3',
@@ -311,7 +311,7 @@ describe('Cli', () => {
       expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
         arg1: 'foo',
         arg2: ['bar', 'baz'],
-      }), 'cli-iface');
+      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
     });
 
     it('does not run with empty or unknown commands', async () => {
@@ -344,6 +344,11 @@ describe('Cli', () => {
       await expect(cli.run('Test2')).rejects.toBeInstanceOf(cli.InvalidArgument);
       expect(mock).not.toHaveBeenCalled();
     });
+
+    it('does not allow executing the "help" command directly', async () => {
+      const cli = Cli(app);
+      await expect(cli.run('help')).rejects.toBeInstanceOf(cli.InvalidInvocation);
+    });
   });
 
   describe('.usage()', () => {
@@ -375,18 +380,38 @@ describe('Cli', () => {
       });
       cli.register({
         name: 'Test2',
-        args: ['foo'],
+        args: ['foo', 'bar'],
+        rest: true,
         exec: () => { },
         description: 'Test command 2',
         help: 'Test command instructions',
       });
 
       const usage1 = cli.usage('Test1');
-      expect(usage1).toMatch('Test1 <foo> <bar>');
+      expect(usage1).toMatch('Test1 <foo> [bar=123]');
 
       const usage2 = cli.usage('Test2');
-      expect(usage2).toMatch('Test2 <foo>');
+      expect(usage2).toMatch('Test2 <foo> <...bar>');
       expect(usage2).toMatch('Test command instructions');
+    });
+  });
+
+  describe('.list()', () => {
+    it('returns a list of registered commands', () => {
+      const cli = Cli(app);
+      cli.register({
+        name: 'Test1',
+        exec: () => { },
+        description: 'Test command 1',
+      });
+      cli.register({
+        name: 'Test2',
+        exec: () => { },
+        description: 'Test command 2',
+      });
+
+      const commands = cli.list();
+      expect(commands).toEqual(['Test1', 'Test2']);
     });
   });
 });

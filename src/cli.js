@@ -88,6 +88,10 @@ const registerCommands = (cli, project) => {
   try {
     await Cli.run(cmd, ...args);
   } catch (e) {
+    if (e instanceof Cli.InvalidInvocation) {
+      console.log(Cli.usage(args[0]));
+      process.exit(0);
+    }
     console.error(e.message);
     console.log(Cli.usage(cmd));
     process.exit(1);

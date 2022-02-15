@@ -3,6 +3,7 @@ const assert = require('assert');
 class MissingCommand extends Error { }
 class InvalidCommand extends Error { }
 class InvalidArgument extends Error { }
+class InvalidInvocation extends Error { }
 
 /**
  * @typedef Command
@@ -60,7 +61,23 @@ const makeTable = (padding = 4) => {
  * @returns {Cli}
  */
 module.exports = ({ Core: { Project, CliInterface } }) => {
-  const commands = [];
+  const commands = [{
+    name: 'help',
+    args: ['command'],
+    defaults: {},
+    optional: ['command'],
+    rest: false,
+    help: '',
+    description: '',
+    exec() {
+      throw new InvalidInvocation();
+    },
+  }];
+
+  /**
+   * @returns {String[]}
+   */
+  const list = () => commands.map(({ name }) => name).filter((name) => name !== 'help');
 
   /**
    * @param {String} name
@@ -176,20 +193,31 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     }
 
     process.chdir(Project.path);
-    await command.exec(parsed.args, CliInterface);
+    await command.exec(parsed.args, CliInterface, { list, run });
   };
 
   const usage = (cmd) => {
     const command = getCommand(cmd);
-    const args = command ? command.args.map((arg) => `<${arg}>`).join(' ') : '[...args]';
+    const args = command ? command.args.map((arg, i) => {
+      let out = arg;
+      if (command.rest && i === command.args.length - 1) {
+        out = `...${arg}`;
+      }
+      if (command.defaults[arg] !== undefined) {
+        out = `${arg}=${command.defaults[arg]}`;
+      }
+      return command.optional.includes(arg) ? `[${out}]` : `<${out}>`;
+    }).join(' ') : '[...args]';
     const out = [`Usage: ${Project.cmd} ${command?.name || '<command>'} ${args}`];
 
     if (!command) {
+      out.push(`       ${Project.cmd} help <command>`);
       out.push('', 'Available commands:');
 
       const table = makeTable();
-      for (const command of commands) {
-        table.addRow(command.name, command.description);
+      for (const name of list()) {
+        const { description } = getCommand(name);
+        table.addRow(name, description);
       }
       table.alignedRows().forEach((row) => out.push(`    ${row}`));
     } else if (command.help) {
@@ -203,8 +231,10 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     MissingCommand,
     InvalidCommand,
     InvalidArgument,
+    InvalidInvocation,
     register,
     run,
     usage,
+    list,
   };
 };
