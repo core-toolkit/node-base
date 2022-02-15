@@ -30,14 +30,16 @@ module.exports = (process) => {
     cmd: process.env.npm_command ? 'npm run cli' : 'node-base-cli',
     path: cwd,
     name: basename(cwd),
-    initialized: true,
+    initialized: false,
     packages: [],
-    nodeBase: {},
+    nodeBase: {
+      version: 0,
+      packages: [],
+    },
   };
 
   while (!fs.existsSync(resolve(project.path, 'package.json'))) {
     if (project.path.length <= 1) {
-      project.initialized = false;
       project.path = cwd;
       break;
     };
@@ -49,11 +51,12 @@ module.exports = (process) => {
   project.configPath = resolve(project.path, 'src/config.js');
   project.packagesPath = resolve(project.path, 'packages');
 
-  if (project.initialized) {
+  if (fs.existsSync(project.jsonPath)) {
     const packageJson = require(project.jsonPath);
     project.name = packageJson.name;
     project.packages = Object.keys(packageJson.dependencies);
-    project.nodeBase = packageJson.nodeBase;
+    project.nodeBase = packageJson.nodeBase ?? project.nodeBase;
+    project.initialized = project.nodeBase.packages.includes('node-base');
   }
 
   return project;
