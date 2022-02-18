@@ -9,7 +9,7 @@ describe('CacheService', () => {
       expect(foo).toBe('bar');
     });
 
-    it('fetches non-existant values', () => {
+    it('fetches non-existent values', () => {
       const cache = Cache();
 
       const foo = cache.get('foo');
@@ -44,7 +44,7 @@ describe('CacheService', () => {
       expect(foo).toBe(undefined);
     });
 
-    it('fetches non-existant values', () => {
+    it('fetches non-existent values', () => {
       const cache = Cache();
 
       cache.remove('foo');
@@ -60,7 +60,7 @@ describe('CacheService', () => {
       expect(cache.has('baz')).toBe(true);
     });
 
-    it('eturns false on non-existant values', () => {
+    it('eturns false on non-existent values', () => {
       const cache = Cache();
       expect(cache.has('foo')).toBe(false);
     });
@@ -73,14 +73,14 @@ describe('CacheService', () => {
       expect(foo).toBe('bar');
     });
 
-    it('sets non-existant values', async () => {
+    it('sets non-existent values', async () => {
       const cache = Cache();
       const foo = await cache.remember('foo', 'bar');
       expect(foo).toBe('bar');
       expect(cache.get('foo')).toBe('bar');
     });
 
-    it('sets non-existant values with a callback', async () => {
+    it('sets non-existent values with a callback', async () => {
       const cache = Cache();
       const foo = await cache.remember('foo', async () => 'bar');
       expect(foo).toBe('bar');
