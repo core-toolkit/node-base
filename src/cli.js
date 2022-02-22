@@ -72,12 +72,9 @@ const registerCommands = (cli, project) => {
   try {
     const App = require(Project.rootPath);
     const Config = require(Project.configPath);
-    const realApp = App(Config);
-    await realApp.initAll();
-    app = realApp;
-  } catch (_) {
-    await app.initAll();
-  }
+    app = App(Config);
+  } catch (_) { }
+  await app.initAll().catch(() => {});
 
   const { Core: { Cli } } = await app.resolveDependencies(['Core']);
 
