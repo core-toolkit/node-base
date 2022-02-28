@@ -193,20 +193,24 @@ describe('Application', () => {
     it('waits for all registered components to initialize', async () => {
       const app = MakeApp();
       const Test1 = jest.fn().mockReturnValue('foo');
-      const Test2 = jest.fn();
+      const Test2 = jest.fn().mockReturnValue('bar');
+      const Test3 = jest.fn().mockReturnValue('baz');
 
       app.registerType('TestType1');
-      app.registerType('TestType2', 'TestType1');
+      app.registerType('TestType2', 'TestType1', 'TestType2');
       app.register('TestType1', 'Test1', Test1);
       app.register('TestType2', 'Test2', Test2);
+      app.register('TestType2', 'Test3', Test3);
       const components = await app.initAll();
       expect(Test1).toHaveBeenCalledTimes(1);
       expect(Test1).toHaveBeenCalledWith({});
       expect(Test2).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1: 'foo' } });
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1: 'foo' }, TestType2: {} });
+      expect(Test3).toHaveBeenCalledTimes(1);
+      expect(Test3).toHaveBeenCalledWith({ TestType1: { Test1: 'foo' }, TestType2: { Test2: 'bar' } });
       expect(components).toEqual({
         TestType1: { Test1: 'foo' },
-        TestType2: { Test2: 'bar' },
+        TestType2: { Test2: 'bar', Test3: 'baz' },
       })
     });
   });

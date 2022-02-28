@@ -8,6 +8,7 @@ const assert = require('assert');
 
 module.exports = () => {
   const App = {
+    registrations: {},
     components: {},
     types: {},
     globalMiddleware: [],
@@ -41,6 +42,57 @@ module.exports = () => {
   };
 
   /**
+   * @returns {String[]}
+   */
+  const getTypes = () => {
+    const out = [];
+    const remaining = Object.keys(App.types);
+
+    while (remaining.length) {
+      const candidates = [];
+      for (const type of remaining) {
+        const requirements = App.types[type].params.filter((param) => param !== type && remaining.includes(param));
+        if (!requirements.length) {
+          candidates.push(type);
+        }
+      }
+
+      candidates.forEach((type) => remaining.splice(remaining.indexOf(type), 1));
+      out.push(...candidates.sort());
+    }
+    return out;
+  };
+
+  /**
+   * @param {String} component
+   * @param {String} fromType
+   * @returns {Promise<Component>}
+   */
+  const initComponent = async (component) => {
+    const [type, name] = component.split('.');
+    const types = App.types[type].params.filter((param) => param !== type);
+    const context = await resolveDependencies(types);
+    if (App.types[type].params.includes(type)) {
+      context[type] = {};
+      for (const component of Object.keys(App.components)) {
+        const [componentType, name] = component.split('.');
+        if (componentType === type) {
+          context[type][name] = App.components[component];
+        }
+      }
+    }
+
+    let next = App.registrations[component];
+    for (const middleware of App.types[type].middleware) {
+      next = await middleware(next, context);
+    }
+    for (const middleware of App.globalMiddleware) {
+      next = await middleware(next, context, type, name);
+    }
+    return typeof next === 'function' ? next(context) : next;
+  }
+
+  /**
    * ['a', 'b'] => {
    *  a: { x: Component<a.x>, y: Component<a.y>, ... },
    *  b: { z: Component<b.z>, ... },
@@ -55,15 +107,23 @@ module.exports = () => {
       obj[type] = {};
     }
 
-    for (const component of Object.keys(App.components)) {
+    for (const component of Object.keys(App.registrations)) {
       const [type, name] = component.split('.');
       if (type in obj) {
-        obj[type][name] = await App.components[component];
+        if (!(component in App.components)) {
+          App.components[component] = await initComponent(component);
+        }
+        obj[type][name] = App.components[component];
       }
     }
 
     return obj;
   };
+
+  /**
+   * @returns {Promise<TypeCollection>}
+   */
+  const resolveAll = () => resolveDependencies(getTypes());
 
   /**
    * @param {String} type
@@ -113,28 +173,6 @@ module.exports = () => {
   };
 
   /**
-   * @returns {String[]}
-   */
-  const getTypes = () => {
-    const out = [];
-    const remaining = Object.keys(App.types);
-
-    while (remaining.length) {
-      const candidates = [];
-      for (const type of remaining) {
-        const requirements = App.types[type].params.filter((param) => param !== type && remaining.includes(param));
-        if (!requirements.length) {
-          candidates.push(type);
-        }
-      }
-
-      candidates.forEach((type) => remaining.splice(remaining.indexOf(type), 1));
-      out.push(...candidates.sort());
-    }
-    return out;
-  };
-
-  /**
    * @param {String} type
    * @param {String} name
    * @param {(params: TypeCollection) => (Component|Promise<Component>)} makeFn
@@ -143,18 +181,9 @@ module.exports = () => {
     assertType(type);
 
     const component = `${type}.${name}`;
-    assertAvailable(type, component, App.components);
+    assertAvailable(type, component, App.registrations);
 
-    App.components[component] = resolveDependencies(App.types[type].params).then(async (params) => {
-      let next = makeFn;
-      for (const middleware of App.types[type].middleware) {
-        next = await middleware(next, params);
-      }
-      for (const middleware of App.globalMiddleware) {
-        next = await middleware(next, params, type, name);
-      }
-      return typeof next === 'function' ? next(params) : next;
-    });
+    App.registrations[component] = makeFn;
   };
 
   const initAll = () => resolveDependencies(getTypes());
