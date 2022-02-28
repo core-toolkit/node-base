@@ -12,6 +12,11 @@ module.exports = () => {
     components: {},
     types: {},
     globalMiddleware: [],
+    hooks: {
+      afterInit: [],
+      afterStart: [],
+      beforeStop: [],
+    },
     running: false,
   };
 
@@ -186,16 +191,50 @@ module.exports = () => {
     App.registrations[component] = makeFn;
   };
 
-  const initAll = () => resolveDependencies(getTypes());
+  const afterInit = (callback) => {
+    assertTypeof('Callback', callback, 'function');
+    App.hooks.afterInit.push(callback);
+  };
+
+  const afterStart = (callback) => {
+    assertTypeof('Callback', callback, 'function');
+    App.hooks.afterStart.push(callback);
+  };
+
+  const beforeStop = (callback) => {
+    assertTypeof('Callback', callback, 'function');
+    App.hooks.beforeStop.push(callback);
+  };
+
+  const initAll = async () => {
+    const components = await resolveAll();
+
+    for (const callback of App.hooks.afterInit) {
+      await callback(components);
+    }
+
+    return components;
+  };
 
   const start = async () => {
     assert(!App.running, 'Application is already running');
     App.running = true;
-    await initAll();
+    const components = await initAll();
+
+    for (const callback of App.hooks.afterStart) {
+      await callback(components);
+    }
   };
 
   const stop = async () => {
     assert(App.running, 'Application is not running');
+    const components = await resolveAll();
+
+    const beforeStop = [...App.hooks.beforeStop].reverse();
+    for (const callback of beforeStop) {
+      await callback(components);
+    }
+
     App.running = false;
     App.components = {};
   };
@@ -211,5 +250,8 @@ module.exports = () => {
     register,
     start,
     stop,
+    afterInit,
+    afterStart,
+    beforeStop,
   };
 };

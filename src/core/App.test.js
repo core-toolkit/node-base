@@ -189,6 +189,42 @@ describe('Application', () => {
     });
   });
 
+  describe('.afterInit()', () => {
+    it('registers a callback to be executed for the "afterInit" hook', () => {
+      const app = MakeApp();
+      app.afterInit(() => {});
+    });
+
+    it('does not register invalid callbacks', () => {
+      const app = MakeApp();
+      expect(() => app.afterInit('foo')).toThrow();
+    });
+  });
+
+  describe('.afterStart()', () => {
+    it('registers a callback to be executed for the "afterStart" hook', () => {
+      const app = MakeApp();
+      app.afterStart(() => {});
+    });
+
+    it('does not register invalid callbacks', () => {
+      const app = MakeApp();
+      expect(() => app.afterStart('foo')).toThrow();
+    });
+  });
+
+  describe('.beforeStop()', () => {
+    it('registers a callback to be executed for the "beforeStop" hook', () => {
+      const app = MakeApp();
+      app.beforeStop(() => {});
+    });
+
+    it('does not register invalid callbacks', () => {
+      const app = MakeApp();
+      expect(() => app.beforeStop('foo')).toThrow();
+    });
+  });
+
   describe('.initAll()', () => {
     it('waits for all registered components to initialize', async () => {
       const app = MakeApp();
@@ -213,12 +249,75 @@ describe('Application', () => {
         TestType2: { Test2: 'bar', Test3: 'baz' },
       })
     });
+
+    it('calls all callbacks after it has executed', async () => {
+      const app = MakeApp();
+      app.registerType('Type1');
+      app.registerType('Type2');
+      app.register('Type1', 'Test1', () => 'foo');
+      app.register('Type2', 'Test2', () => 'bar');
+
+      const orderMock = jest.fn();
+      const mock1 = jest.fn(() => orderMock(1));
+      const mock2 = jest.fn(() => orderMock(2));
+
+      app.afterInit(mock1);
+      app.afterInit(mock2);
+
+      await app.initAll();
+      expect(mock1).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(mock2).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(orderMock).toHaveBeenLastCalledWith(2);
+
+      app.registerType('Type3');
+      app.register('Type3', 'Test3', () => 'baz');
+
+      orderMock.mockClear();
+      mock1.mockClear();
+      mock2.mockClear();
+
+      await app.initAll();
+      expect(mock1).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' }, Type3: { Test3: 'baz' } });
+      expect(mock2).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' }, Type3: { Test3: 'baz' } });
+      expect(orderMock).toHaveBeenLastCalledWith(2);
+    });
   });
 
   describe('.start()', () => {
     it('starts the application', async () => {
       const app = MakeApp();
       await app.start();
+    });
+
+    it('calls all callbacks after it has executed', async () => {
+      const app = MakeApp();
+      app.registerType('Type1');
+      app.registerType('Type2');
+      app.register('Type1', 'Test1', () => 'foo');
+      app.register('Type2', 'Test2', () => 'bar');
+
+      const orderMock = jest.fn();
+      const mock1 = jest.fn(() => orderMock(1));
+      const mock2 = jest.fn(() => orderMock(2));
+
+      app.afterStart(mock1);
+      app.afterStart(mock2);
+
+      await app.initAll();
+      expect(mock1).not.toHaveBeenCalled();
+      expect(mock2).not.toHaveBeenCalled();
+      expect(orderMock).not.toHaveBeenCalled();
+
+      await app.start();
+      expect(mock1).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(mock2).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(orderMock).toHaveBeenLastCalledWith(2);
     });
 
     it('does not start the application if already running', async () => {
@@ -257,6 +356,33 @@ describe('Application', () => {
       expect(test1Mock).toHaveBeenCalledTimes(2);
       expect(test2Mock).toHaveBeenCalledTimes(2);
       expect(test2Mock).toHaveBeenLastCalledWith({ TestType1: { Test1: 2 } });
+    });
+
+    it('calls all callbacks before it has executed', async () => {
+      const app = MakeApp();
+      app.registerType('Type1');
+      app.registerType('Type2');
+      app.register('Type1', 'Test1', () => 'foo');
+      app.register('Type2', 'Test2', () => 'bar');
+
+      const orderMock = jest.fn();
+      const mock1 = jest.fn(() => orderMock(1));
+      const mock2 = jest.fn(() => orderMock(2));
+
+      app.beforeStop(mock1);
+      app.beforeStop(mock2);
+
+      await app.start();
+      expect(mock1).not.toHaveBeenCalled();
+      expect(mock2).not.toHaveBeenCalled();
+      expect(orderMock).not.toHaveBeenCalled();
+
+      await app.stop();
+      expect(mock1).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(mock2).toHaveBeenCalledTimes(1);
+      expect(mock1).toHaveBeenCalledWith({ Type1: { Test1: 'foo' }, Type2: { Test2: 'bar' } });
+      expect(orderMock).toHaveBeenLastCalledWith(1);
     });
 
     it('does not stop the application if not running', async () => {
