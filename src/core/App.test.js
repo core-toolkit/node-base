@@ -228,6 +228,43 @@ describe('Application', () => {
     });
   });
 
+  describe('.stop()', () => {
+    it('stops the application', async () => {
+      const app = MakeApp();
+      await app.start();
+      await app.stop();
+    });
+
+    it('forces reinitialization of the components on consequent App.start() calls', async () => {
+      const app = MakeApp();
+      app.registerType('TestType1');
+      app.registerType('TestType2', 'TestType1');
+
+      let counter = 0;
+      const test1Mock = jest.fn(() => ++counter);
+      const test2Mock = jest.fn();
+
+      app.register('TestType1', 'Test1', test1Mock);
+      app.register('TestType2', 'Test2', test2Mock);
+
+      await app.start();
+      expect(test1Mock).toHaveBeenCalledTimes(1);
+      expect(test2Mock).toHaveBeenCalledTimes(1);
+      expect(test2Mock).toHaveBeenCalledWith({ TestType1: { Test1: 1 } });
+
+      await app.stop();
+      await app.start();
+      expect(test1Mock).toHaveBeenCalledTimes(2);
+      expect(test2Mock).toHaveBeenCalledTimes(2);
+      expect(test2Mock).toHaveBeenLastCalledWith({ TestType1: { Test1: 2 } });
+    });
+
+    it('does not stop the application if not running', async () => {
+      const app = MakeApp();
+      await expect(app.stop()).rejects.toThrow();
+    });
+  });
+
   describe('.getTypes()', () => {
     it('returns all registered types in order of dependency', () => {
       const app = MakeApp();

@@ -194,6 +194,12 @@ module.exports = () => {
     await initAll();
   };
 
+  const stop = async () => {
+    assert(App.running, 'Application is not running');
+    App.running = false;
+    App.components = {};
+  };
+
   return {
     resolveDependencies,
     initAll,
@@ -204,5 +210,6 @@ module.exports = () => {
     getTypes,
     register,
     start,
+    stop,
   };
 };
