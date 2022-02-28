@@ -2,7 +2,7 @@ const CliInterface = require('./CliInterface');
 const Str = require('../utils/Str');
 
 
-const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addPackage'];
+const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage'];
 
 const files = {
   '/base/foo.txt': 'test foo',
@@ -351,9 +351,9 @@ module.exports = (Config) => {
     });
   });
 
-  describe('.addPackage()', () => {
+  describe('.addBasePackage()', () => {
     it('installs new packages', () => {
-      iface.addPackage('foo');
+      iface.addBasePackage('foo');
       expect(cp.spawnSync).toHaveBeenCalledWith('git', expect.arrayContaining([
         'submodule',
         'add',
@@ -376,7 +376,7 @@ module.exports = (Config) => {
     });
 
     it('re-installs existing packages', () => {
-      iface.addPackage('node-base-baz');
+      iface.addBasePackage('node-base-baz');
       expect(cp.spawnSync).not.toHaveBeenCalledWith('git', expect.arrayContaining([
         'submodule',
         'add',
@@ -399,7 +399,7 @@ module.exports = (Config) => {
     });
 
     it('installs dev packages', () => {
-      iface.addPackage('foo', true);
+      iface.addBasePackage('foo', true);
       expect(cp.spawnSync).toHaveBeenCalledWith('git', expect.arrayContaining([
         'submodule',
         'add',
@@ -426,7 +426,7 @@ module.exports = (Config) => {
       const mock = jest.fn();
       jest.mock('/base/packages/node-base-foo/src/cli/commands/init.js', () => mock, { virtual: true });
 
-      iface.addPackage('node-base-foo', false, 'foo');
+      iface.addBasePackage('node-base-foo', false, 'foo');
       expect(mock).toHaveBeenLastCalledWith('foo', iface);
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
@@ -445,7 +445,7 @@ module.exports = (Config) => {
     it('does not finalize packages on failure', () => {
       jest.mock('/base/packages/node-base-qux/src/cli/commands/init.js', () => () => { throw new Error(); }, { virtual: true });
 
-      expect(() => iface.addPackage('node-base-qux', false, 'foo')).toThrow();
+      expect(() => iface.addBasePackage('node-base-qux', false, 'foo')).toThrow();
       expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
   });

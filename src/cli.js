@@ -44,7 +44,7 @@ const registerCommands = (cli, project) => {
     .filter((key) => !project.nodeBase.packages.includes(`node-base-${key}`))
     .forEach((key) => cli.register({
       name: `enable:${key}`,
-      exec(args, { addPackage }) { addPackage(`node-base-${key}`, false, args); },
+      exec(args, { addBasePackage }) { addBasePackage(`node-base-${key}`, false, args); },
       ...enablePackages[key],
     }));
 

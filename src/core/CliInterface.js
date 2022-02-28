@@ -192,7 +192,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      * @param {Boolean} dev
      * @param {Object} args
      */
-    addPackage: (name, dev, args) => {
+    addBasePackage: (name, dev, args) => {
       iface.mkdirp('packages');
       const path = `packages/${name}/`;
       if (!iface.exists(path)) {

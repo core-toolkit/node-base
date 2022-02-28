@@ -1,4 +1,4 @@
-module.exports = (_, { copy, exec, exists, packageJSON, addPackage }) => {
+module.exports = (_, { copy, exec, exists, packageJSON, addBasePackage }) => {
   // Setup git
   if (!exists('.git')) {
     exec('git', 'init');
@@ -22,8 +22,8 @@ module.exports = (_, { copy, exec, exists, packageJSON, addPackage }) => {
     pkg.scripts.test = 'node-base-cli test';
   });
 
-  addPackage('node-base');
-  addPackage('node-base-dev', true);
+  addBasePackage('node-base');
+  addBasePackage('node-base-dev', true);
 
   // Setup file structure
   copy('.gitignore');
