@@ -199,13 +199,15 @@ describe('Application', () => {
       app.registerType('TestType2', 'TestType1');
       app.register('TestType1', 'Test1', Test1);
       app.register('TestType2', 'Test2', Test2);
-      await app.initAll();
+      const components = await app.initAll();
       expect(Test1).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith(expect.any(Object));
+      expect(Test1).toHaveBeenCalledWith({});
       expect(Test2).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1: 'foo' }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1: 'foo' } });
+      expect(components).toEqual({
+        TestType1: { Test1: 'foo' },
+        TestType2: { Test2: 'bar' },
+      })
     });
   });
 

@@ -157,7 +157,7 @@ module.exports = () => {
     });
   };
 
-  const initAll = () => Promise.all(Object.values(App.components)).then(() => { });
+  const initAll = () => resolveDependencies(getTypes());
 
   const start = async () => {
     assert(!App.running, 'Application is already running');
