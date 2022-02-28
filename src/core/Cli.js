@@ -117,14 +117,19 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     return parsed;
   };
 
-  const register = (command) => {
+  const register = (command, skipDuplicate) => {
     if (Array.isArray(command)) {
-      return command.forEach(register);
+      return command.forEach((subCommand) => register(subCommand, skipDuplicate));
     }
 
     assert(command, 'No command supplied');
     assert(typeof command === 'object', 'Supplied command is of invalid type');
     assert(command.name && typeof command.name === 'string', 'Property "name" must be a non-empty string');
+
+    const existing = getCommand(command.name);
+    if (existing && skipDuplicate) {
+      return;
+    }
     assert(!getCommand(command.name), `Command "${command.name}" is already registered`);
     assert(typeof command.exec === 'function', 'Property "exec" must be a callback function');
     assert(command.description && typeof command.description === 'string', 'Property "description" must be a non-empty string');

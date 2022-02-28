@@ -94,6 +94,23 @@ describe('Cli', () => {
       });
     });
 
+    it('skips registering commands with the same name', () => {
+      const cli = Cli(app);
+      cli.register({
+        name: 'Test',
+        exec: () => { },
+        description: 'Test command',
+      });
+
+      expect(() => cli.register({
+        name: 'Test',
+        exec: () => { },
+        description: 'Test command',
+      }, true)).not.toThrow();
+
+      expect(cli.list()).toEqual(['Test']);
+    });
+
     it('does not register missing or invalid commands', () => {
       const cli = Cli(app);
       expect(() => cli.register()).toThrow();
