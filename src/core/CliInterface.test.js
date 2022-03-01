@@ -3,7 +3,7 @@ const Str = require('../utils/Str');
 const { deepMockClear } = require('../utils/Mock');
 
 
-const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageLock', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage'];
+const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageLock', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage', 'migrate'];
 
 const files = {
   '/base/foo.txt': 'test foo',
@@ -14,12 +14,16 @@ const files = {
   '/base/node_modules/@core-toolkit/node-base/src/cli/templates/src/root-require-app.js': 'const Make__name__App = require(\'@core-toolkit/__path__\');\n',
   '/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/foo/bar.txt': 'test bar',
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/commands/init.js': 'module.exports = () => {};',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/0.1.0.js': '',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/1.0.0.js': '',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/1.1.0.js': '',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/1.1.1.js': '',
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/config.js': 'exports.foo = __num__;\n',
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
   '/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
-  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":"1.0.0","packages":{"node-base-foo":"1.0.0","node-base-baz":"1.0.0"}}}',
-  '/base/package-lock.json': '{"packages":{"@core-toolkit/foo":{"version":"2.0.0"},"@core-toolkit/node-base":{"version":"2.0.0"},"@core-toolkit/node-base-foo":{"version":"2.0.0"},"@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
+  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":"1.0.0","packages":{"node-base-foo":"1.1.1","node-base-baz":"1.0.0"}}}',
+  '/base/package-lock.json': '{"packages":{"@core-toolkit/node-base-new":{"version":"2.0.0"},"@core-toolkit/node-base":{"version":"2.0.0"},"@core-toolkit/node-base-foo":{"version":"2.0.0"},"@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
 const MakeApp = require('@core-toolkit/node-base');
@@ -48,10 +52,11 @@ const fs = {
   copyFileSync: jest.fn(),
   readFileSync: jest.fn((path) => Buffer.from(files[path] ?? '')),
   writeFileSync: jest.fn(),
+  readdirSync: jest.fn((path) => Object.keys(files).filter((file) => file.startsWith(path)).map((file) => file.substring(path.length + 1))),
 };
 const iface = CliInterface(fs, cp, () => ['Util', 'Client', 'Service', 'UseCase'])({
   Util: { Func: { memoize: (fn) => fn }, Str },
-  Core: { Project: { path: '/base' } },
+  Core: { Project: { path: '/base', nodeBase: { packages: { 'node-base-foo': '1.1.1' }} } },
 });
 
 describe('CliInterface', () => {
@@ -195,7 +200,7 @@ describe('CliInterface', () => {
   "nodeBase": {
     "version": "1.0.0",
     "packages": {
-      "node-base-foo": "1.0.0",
+      "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0"
     }
   },
@@ -463,6 +468,29 @@ module.exports = (Config) => {
 
       expect(() => iface.addBasePackage('node-base-qux', false, 'foo')).toThrow();
       expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('.migrate()', () => {
+    it('runs the relevant migration scripts', async () => {
+      const versions = ['0.1.0', '1.0.0', '1.1.0', '1.1.1'];
+      const mocks = {};
+
+      for (const mockVersion of versions) {
+        mocks[mockVersion] = jest.fn();
+        jest.mock(`/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/${mockVersion}.js`, () => mocks[mockVersion], { virtual: true });
+      }
+      await iface.migrate('node-base-foo');
+
+      for (const version of versions.slice(0, 3)) {
+        expect(fs.writeFileSync).not.toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
+        expect(mocks[version]).not.toHaveBeenCalled();
+      }
+
+      for (const version of versions.slice(3)) {
+        expect(fs.writeFileSync).toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
+        expect(mocks[version]).toHaveBeenCalled();
+      }
     });
   });
 });

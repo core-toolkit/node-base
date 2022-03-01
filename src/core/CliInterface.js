@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { resolve, dirname } = require('path');
 
+const toSemver = (version) => version.split('.').map((part) => Number(part));
+
 module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: { Project } }) => {
   const iface = {
     /**
@@ -187,6 +189,22 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      */
     addAppToRoot: (name, pkg = `node-base-${name.toLowerCase()}`) => {
       iface.addToRoot('App', name, pkg, 'src/root-register-app.js', /MakeApp\([^)]+/, 'src/root-require-app.js', /App = require[^;]+;\n/);
+    },
+
+    migrate: async (name) => {
+      const version = Project.nodeBase.packages[name];
+      const semver = toSemver(version);
+      const migrationsPath = `${Project.path}/node_modules/@core-toolkit/${name}/src/cli/migrations`;
+      const migrations = fs.readdirSync(migrationsPath);
+      for (const migration of migrations) {
+        const migrationSemver = toSemver(migration);
+        if (semver[0] > migrationSemver[0] || semver[1] > migrationSemver[1] || semver[2] > migrationSemver[2]) {
+          continue;
+        }
+        const migrationFn = require(`${migrationsPath}/${migration}`);
+        await migrationFn(iface);
+        iface.packageJSON((pkg) => (pkg.nodeBase.packages[name] = version));
+      }
     },
 
     /**

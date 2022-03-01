@@ -33,7 +33,7 @@ module.exports = (process) => {
     initialized: false,
     packages: [],
     nodeBase: {
-      packages: [],
+      packages: {},
     },
   };
 

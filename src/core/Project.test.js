@@ -33,7 +33,7 @@ describe('Project', () => {
     expect(mockProject.name).toBe('foo');
     expect(mockProject.initialized).toBe(false);
     expect(mockProject.packages.length).toBe(0);
-    expect(mockProject.nodeBase).toEqual({ packages: [] });
+    expect(mockProject.nodeBase).toEqual({ packages: {} });
   });
 
   it('identifies non-node-base projects', () => {
@@ -43,7 +43,7 @@ describe('Project', () => {
     expect(project.name).toBe('@core-toolkit/node-base');
     expect(project.initialized).toBe(false);
     expect(project.packages).toContain('axios');
-    expect(project.nodeBase).toEqual({ packages: [] });
+    expect(project.nodeBase).toEqual({ packages: {} });
   });
 
   it('identifies projects running under npm', () => {
