@@ -1,1 +1,1 @@
-const Make__name__App = require('__path__');
+const Make__name__App = require('@core-toolkit/__path__');

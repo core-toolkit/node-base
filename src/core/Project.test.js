@@ -1,12 +1,11 @@
-const { resolve } = require('path');
 const Project = require('./Project');
+
 const props = [
   ['cmd', 'string'],
   ['path', 'string'],
   ['jsonPath', 'string'],
   ['rootPath', 'string'],
   ['configPath', 'string'],
-  ['packagesPath', 'string'],
   ['name', 'string'],
   ['initialized', 'boolean'],
   ['packages', 'array'],
@@ -31,7 +30,6 @@ describe('Project', () => {
     expect(mockProject.jsonPath).toBe('/foo/package.json');
     expect(mockProject.rootPath).toBe('/foo/src/root.js');
     expect(mockProject.configPath).toBe('/foo/src/config.js');
-    expect(mockProject.packagesPath).toBe('/foo/packages');
     expect(mockProject.name).toBe('foo');
     expect(mockProject.initialized).toBe(false);
     expect(mockProject.packages.length).toBe(0);
@@ -42,7 +40,7 @@ describe('Project', () => {
     const project = Project({ env: {}, cwd: () => __dirname });
     expect(project.cmd).toBe('node-base-cli');
     expect(project.path).not.toBe(__dirname);
-    expect(project.name).toBe('node-base');
+    expect(project.name).toBe('@core-toolkit/node-base');
     expect(project.initialized).toBe(false);
     expect(project.packages).toContain('axios');
     expect(project.nodeBase).toEqual({ packages: [] });
@@ -61,7 +59,7 @@ describe('Project', () => {
     const project = Project({ env: { npm_command: 'run-script' }, cwd: () => __dirname });
     expect(project.cmd).toBe('npm run cli');
     expect(project.path).not.toBe(__dirname);
-    expect(project.name).toBe('node-base');
+    expect(project.name).toBe('@core-toolkit/node-base');
     expect(project.initialized).toBe(true);
     expect(project.nodeBase).toEqual(nodeBase);
   });

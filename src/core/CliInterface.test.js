@@ -1,28 +1,29 @@
 const CliInterface = require('./CliInterface');
 const Str = require('../utils/Str');
+const { deepMockClear } = require('../utils/Mock');
 
 
 const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageLock', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage'];
 
 const files = {
   '/base/foo.txt': 'test foo',
-  '/base/packages/node-base/src/cli/templates/foo/bar.tpl': '1 __foo__ 2 __bar__ 3 __foo__',
-  '/base/packages/node-base/src/cli/templates/src/root-register.js': '  App.register(\'__type__\', \'__name____type__\', __name____type__);\n',
-  '/base/packages/node-base/src/cli/templates/src/root-register-app.js': ', Make__name__App',
-  '/base/packages/node-base/src/cli/templates/src/root-require.js': 'const __name____type__ = require(\'__path__/__name____type__.js\');\n',
-  '/base/packages/node-base/src/cli/templates/src/root-require-app.js': 'const Make__name__App = require(\'__path__\');\n',
-  '/base/packages/node-base-baz/src/cli/templates/foo/bar.txt': 'test bar',
-  '/base/packages/node-base-foo/src/cli/commands/init.js': 'module.exports = () => {};',
-  '/base/packages/node-base-foo/src/cli/templates/config.js': 'exports.foo = __num__;\n',
-  '/base/packages/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
-  '/base/packages/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
-  '/base/packages/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
+  '/base/node_modules/@core-toolkit/node-base/src/cli/templates/foo/bar.tpl': '1 __foo__ 2 __bar__ 3 __foo__',
+  '/base/node_modules/@core-toolkit/node-base/src/cli/templates/src/root-register.js': '  App.register(\'__type__\', \'__name____type__\', __name____type__);\n',
+  '/base/node_modules/@core-toolkit/node-base/src/cli/templates/src/root-register-app.js': ', Make__name__App',
+  '/base/node_modules/@core-toolkit/node-base/src/cli/templates/src/root-require.js': 'const __name____type__ = require(\'__path__/__name____type__.js\');\n',
+  '/base/node_modules/@core-toolkit/node-base/src/cli/templates/src/root-require-app.js': 'const Make__name__App = require(\'@core-toolkit/__path__\');\n',
+  '/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/foo/bar.txt': 'test bar',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/commands/init.js': 'module.exports = () => {};',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/config.js': 'exports.foo = __num__;\n',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
+  '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
+  '/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
   '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":"1.0.0","packages":{"node-base-foo":"1.0.0","node-base-baz":"1.0.0"}}}',
-  '/base/package-lock.json': '{"packages":{"packages/foo":{"version":"2.0.0"},"packages/node-base":{"version":"2.0.0"},"packages/node-base-foo":{"version":"2.0.0"},"packages/node-base-baz":{"version":"2.0.0" }}}',
+  '/base/package-lock.json': '{"packages":{"@core-toolkit/foo":{"version":"2.0.0"},"@core-toolkit/node-base":{"version":"2.0.0"},"@core-toolkit/node-base-foo":{"version":"2.0.0"},"@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -50,11 +51,11 @@ const fs = {
 };
 const iface = CliInterface(fs, cp, () => ['Util', 'Client', 'Service', 'UseCase'])({
   Util: { Func: { memoize: (fn) => fn }, Str },
-  Core: { Project: { path: '/base', packagesPath: '/base/packages' } },
+  Core: { Project: { path: '/base' } },
 });
 
 describe('CliInterface', () => {
-  beforeEach(() => Object.keys(fs).map((key) => fs[key]).concat(cp.spawnSync).forEach((fn) => fn.mockClear()));
+  beforeEach(() => deepMockClear({ cp, fs }));
 
   it('constructs a CLI interface', () => {
     for (const method of methods) {
@@ -87,12 +88,12 @@ describe('CliInterface', () => {
   describe('.resolveTemplate()', () => {
     it('resolves templates', () => {
       const resolved = iface.resolveTemplate('foo/bar.js');
-      expect(resolved).toBe('/base/packages/node-base/src/cli/templates/foo/bar.js');
+      expect(resolved).toBe('/base/node_modules/@core-toolkit/node-base/src/cli/templates/foo/bar.js');
     });
 
     it('resolves templates from other packages', () => {
       const resolved = iface.resolveTemplate('baz:foo/bar.js');
-      expect(resolved).toBe('/base/packages/node-base-baz/src/cli/templates/foo/bar.js');
+      expect(resolved).toBe('/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/foo/bar.js');
     });
   });
 
@@ -124,23 +125,23 @@ describe('CliInterface', () => {
   describe('.copy()', () => {
     it('copies the supplied template to the project directory', () => {
       iface.copy('bar/baz.js');
-      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/packages/node-base/src/cli/templates/bar/baz.js', '/base/bar/baz.js');
+      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base/src/cli/templates/bar/baz.js', '/base/bar/baz.js');
       expect(fs.mkdirSync).toHaveBeenLastCalledWith('/base/bar');
     });
 
     it('does not copy the template if the target already exists', () => {
       iface.copy('foo.txt');
-      expect(fs.copyFileSync).not.toHaveBeenLastCalledWith('/base/packages/node-base/src/cli/templates/foo.txt', '/base/foo.txt');
+      expect(fs.copyFileSync).not.toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base/src/cli/templates/foo.txt', '/base/foo.txt');
     });
 
     it('overwrites existing targets', () => {
       iface.copy('foo.txt', true);
-      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/packages/node-base/src/cli/templates/foo.txt', '/base/foo.txt');
+      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base/src/cli/templates/foo.txt', '/base/foo.txt');
     });
 
     it('copies template from other packages', () => {
       iface.copy('baz:bar/baz.js');
-      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/packages/node-base-baz/src/cli/templates/bar/baz.js', '/base/bar/baz.js');
+      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/bar/baz.js', '/base/bar/baz.js');
       expect(fs.mkdirSync).toHaveBeenLastCalledWith('/base/bar');
     });
   });
@@ -172,10 +173,10 @@ describe('CliInterface', () => {
       const packageLock = iface.packageLock();
       expect(packageLock).toEqual({
         packages: {
-          "packages/foo": { version: "2.0.0" },
-          "packages/node-base": { version: "2.0.0" },
-          "packages/node-base-foo": { version: "2.0.0" },
-          "packages/node-base-baz": { version: "2.0.0" },
+          "@core-toolkit/foo": { version: "2.0.0" },
+          "@core-toolkit/node-base": { version: "2.0.0" },
+          "@core-toolkit/node-base-foo": { version: "2.0.0" },
+          "@core-toolkit/node-base-baz": { version: "2.0.0" },
         },
       });
     });
@@ -232,8 +233,8 @@ describe('CliInterface', () => {
     it('adds a component to its own group', () => {
       iface.addToRoot('UseCase', 'Qux', './application/use-cases');
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -257,8 +258,8 @@ module.exports = (Config) => {
     it('adds a component to its nearest group', () => {
       iface.addToRoot('Service', 'Qux', './infrastructure/services');
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -284,8 +285,8 @@ module.exports = (Config) => {
     it('adds a component to the root group', () => {
       iface.addToRoot('Util', 'Qux', './infrastructure/utils');
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
 
 const QuxUtil = require('./infrastructure/utils/QuxUtil.js');
 
@@ -312,8 +313,8 @@ module.exports = (Config) => {
       iface.addToRoot('App', 'Qux', '123', 'foo:register.js', /{\n/, 'foo:require.js', /^/);
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
 const Qux = 123;
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -344,9 +345,9 @@ module.exports = (Config) => {
     it('composes another application into the current one', () => {
       iface.addAppToRoot('Qux');
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/src/root.js', `\
-const MakeApp = require('node-base');
-const DbApp = require('node-base-db');
-const MakeQuxApp = require('node-base-qux');
+const MakeApp = require('@core-toolkit/node-base');
+const DbApp = require('@core-toolkit/node-base-db');
+const MakeQuxApp = require('@core-toolkit/node-base-qux');
 
 const FooClient = require('./infrastructure/clients/FooClient.js');
 
@@ -369,12 +370,7 @@ module.exports = (Config) => {
   describe('.addBasePackage()', () => {
     it('installs new packages', () => {
       iface.addBasePackage('foo');
-      expect(cp.spawnSync).toHaveBeenCalledWith('git', [
-        'submodule',
-        'add',
-        expect.stringContaining('/foo.git'),
-        'packages/foo/',
-      ], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenCalledWith('npm', ['i', '@core-toolkit/foo'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -392,13 +388,7 @@ module.exports = (Config) => {
 
     it('re-installs existing packages', () => {
       iface.addBasePackage('node-base-baz');
-      expect(cp.spawnSync).not.toHaveBeenCalledWith('git', [
-        'submodule',
-        'add',
-        expect.stringContaining('/node-base-baz.git'),
-        'packages/node-base-baz/',
-      ], expect.any(Object));
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', 'packages/node-base-baz/'], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '@core-toolkit/node-base-baz'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -415,13 +405,7 @@ module.exports = (Config) => {
 
     it('installs dev packages', () => {
       iface.addBasePackage('foo', true);
-      expect(cp.spawnSync).toHaveBeenCalledWith('git', [
-        'submodule',
-        'add',
-        expect.stringContaining('/foo.git'),
-        'packages/foo/',
-      ], expect.any(Object));
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '-D', 'packages/foo/'], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '-D', '@core-toolkit/foo'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -439,7 +423,7 @@ module.exports = (Config) => {
 
     it('installs the base package', () => {
       iface.addBasePackage('node-base');
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', 'packages/node-base/'], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '@core-toolkit/node-base'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -456,7 +440,7 @@ module.exports = (Config) => {
 
     it('runs initialization scripts for packages that include one', () => {
       const mock = jest.fn();
-      jest.mock('/base/packages/node-base-foo/src/cli/commands/init.js', () => mock, { virtual: true });
+      jest.mock('/base/node_modules/@core-toolkit/node-base-foo/src/cli/commands/init.js', () => mock, { virtual: true });
 
       iface.addBasePackage('node-base-foo', false, 'foo');
       expect(mock).toHaveBeenLastCalledWith('foo', iface);
@@ -475,7 +459,7 @@ module.exports = (Config) => {
     });
 
     it('does not finalize packages on failure', () => {
-      jest.mock('/base/packages/node-base-qux/src/cli/commands/init.js', () => () => { throw new Error(); }, { virtual: true });
+      jest.mock('/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js', () => () => { throw new Error(); }, { virtual: true });
 
       expect(() => iface.addBasePackage('node-base-qux', false, 'foo')).toThrow();
       expect(fs.writeFileSync).not.toHaveBeenCalled();

@@ -16,6 +16,7 @@ module.exports = (_, { copy, exec, exists, packageJSON, addBasePackage }) => {
     pkg.nodeBase ??= {
       packages: [],
     };
+    pkg.scripts ??= {};
     pkg.scripts.start = 'node src/index.js';
     pkg.scripts.cli = 'node-base-cli';
     pkg.scripts.test = 'node-base-cli test';

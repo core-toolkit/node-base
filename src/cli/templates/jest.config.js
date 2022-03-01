@@ -10,7 +10,7 @@ module.exports = {
     '!src/infrastructure/migrations/*.js',
   ],
   testMatch: ['**/*.test.js'],
-  testPathIgnorePatterns: ['./node_modules/', './packages/'],
+  testPathIgnorePatterns: ['./node_modules/'],
   silent: false,
   forceExit: true,
   verbose: true,

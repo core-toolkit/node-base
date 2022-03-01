@@ -19,7 +19,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
       if (parts.length > 1) {
         [pkg[1], path] = parts;
       }
-      return resolve(Project.packagesPath, pkg.join('-'), 'src/cli/templates', path);
+      return resolve(Project.path, 'node_modules/@core-toolkit', pkg.join('-'), 'src/cli/templates', path);
     },
 
     /**
@@ -195,24 +195,20 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      * @param {Object} args
      */
     addBasePackage: (name, dev, args) => {
-      iface.mkdirp('packages');
-      const path = `packages/${name}/`;
-      if (!iface.exists(path)) {
-        iface.exec('git', 'submodule', 'add', `git@github.com:core-toolkit/${name}.git`, path);
-      }
+      const packageName = `@core-toolkit/${name}`;
       if (dev) {
-        iface.exec('npm', 'i', '-D', path);
+        iface.exec('npm', 'i', '-D', packageName);
       } else {
-        iface.exec('npm', 'i', path);
+        iface.exec('npm', 'i', packageName);
       }
-      const initPath = `${path}/src/cli/commands/init.js`;
+      const initPath = `node_modules/${packageName}/src/cli/commands/init.js`;
       if (iface.exists(initPath)) {
         const initFn = require(iface.resolve(initPath));
         initFn(args, iface);
       }
       iface.packageJSON((pkg) => {
         const lockFile = iface.packageLock();
-        const { version } = lockFile.packages[`packages/${name}`];
+        const { version } = lockFile.packages[packageName];
 
         if (name === 'node-base') {
           pkg.nodeBase.version = version;

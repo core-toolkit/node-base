@@ -48,7 +48,6 @@ module.exports = (process) => {
   project.jsonPath = resolve(project.path, 'package.json');
   project.rootPath = resolve(project.path, 'src/root.js');
   project.configPath = resolve(project.path, 'src/config.js');
-  project.packagesPath = resolve(project.path, 'packages');
 
   if (fs.existsSync(project.jsonPath)) {
     const packageJson = require(project.jsonPath);

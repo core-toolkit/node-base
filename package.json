@@ -1,7 +1,7 @@
 {
-  "name": "node-base",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@core-toolkit/node-base",
+  "version": "0.0.1",
+  "description": "Modular application framework",
   "main": "src/index.js",
   "bin": {
     "node-base-cli": "src/cli.js"
@@ -23,6 +23,6 @@
     "axios": "^0.25.0"
   },
   "devDependencies": {
-    "node-base-dev": "github:core-toolkit/node-base-dev"
+    "@core-toolkit/node-base-dev": "^0.0.1"
   }
 }
