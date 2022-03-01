@@ -14,7 +14,6 @@ module.exports = (_, { copy, exec, exists, packageJSON, addBasePackage }) => {
     pkg.dependencies ??= {};
     pkg.devDependencies ??= {};
     pkg.nodeBase ??= {
-      version: 1,
       packages: [],
     };
     pkg.scripts.start = 'node src/index.js';

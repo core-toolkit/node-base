@@ -33,7 +33,6 @@ module.exports = (process) => {
     initialized: false,
     packages: [],
     nodeBase: {
-      version: 0,
       packages: [],
     },
   };
@@ -56,7 +55,7 @@ module.exports = (process) => {
     project.name = packageJson.name;
     project.packages = Object.keys(packageJson.dependencies);
     project.nodeBase = packageJson.nodeBase ?? project.nodeBase;
-    project.initialized = project.nodeBase.packages.includes('node-base');
+    project.initialized = 'version' in project.nodeBase;
   }
 
   return project;

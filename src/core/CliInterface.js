@@ -211,8 +211,13 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         initFn(args, iface);
       }
       iface.packageJSON((pkg) => {
-        if (!pkg.nodeBase.packages.includes(name)) {
-          pkg.nodeBase.packages.push(name);
+        const lockFile = iface.packageLock();
+        const { version } = lockFile.packages[`packages/${name}`];
+
+        if (name === 'node-base') {
+          pkg.nodeBase.version = version;
+        } else {
+          pkg.nodeBase.packages[name] = version;
         }
       });
     },

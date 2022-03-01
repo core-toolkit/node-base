@@ -35,7 +35,7 @@ describe('Project', () => {
     expect(mockProject.name).toBe('foo');
     expect(mockProject.initialized).toBe(false);
     expect(mockProject.packages.length).toBe(0);
-    expect(mockProject.nodeBase).toEqual({ version: 0, packages: [] });
+    expect(mockProject.nodeBase).toEqual({ packages: [] });
   });
 
   it('identifies non-node-base projects', () => {
@@ -45,17 +45,20 @@ describe('Project', () => {
     expect(project.name).toBe('node-base');
     expect(project.initialized).toBe(false);
     expect(project.packages).toContain('axios');
-    expect(project.nodeBase).toEqual({ version: 0, packages: [] });
+    expect(project.nodeBase).toEqual({ packages: [] });
   });
 
   it('identifies projects running under npm', () => {
     const nodeBase = {
-      version: 1,
-      packages: ['node-base', 'api', 'mq'],
+      version: '1.0.0',
+      packages: {
+        api: '1.0.0',
+        mq: '1.0.0',
+      },
     };
     jest.mock('../../package.json', () => ({ ...jest.requireActual('../../package.json'), nodeBase }));
 
-    const project = Project({ env: { npm_command: 'run-script '}, cwd: () => __dirname });
+    const project = Project({ env: { npm_command: 'run-script' }, cwd: () => __dirname });
     expect(project.cmd).toBe('npm run cli');
     expect(project.path).not.toBe(__dirname);
     expect(project.name).toBe('node-base');

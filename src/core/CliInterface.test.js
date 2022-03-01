@@ -17,7 +17,7 @@ const files = {
   '/base/packages/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
   '/base/packages/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
   '/base/packages/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
-  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":1,"packages":["node-base-foo","node-base-baz"]}}',
+  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":"1.0.0","packages":{"node-base-foo":"1.0.0","node-base-baz":"1.0.0"}}}',
   '/base/package-lock.json': '{"packages":{"packages/foo":{"version":"2.0.0"},"packages/node-base":{"version":"2.0.0"},"packages/node-base-foo":{"version":"2.0.0"},"packages/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
@@ -117,7 +117,7 @@ describe('CliInterface', () => {
   describe('.exec()', () => {
     it('executes the supplied command with the correct parameters', () => {
       iface.exec('foo', 'bar', 'baz');
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('foo', expect.arrayContaining(['bar', 'baz']), expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('foo', ['bar', 'baz'], expect.any(Object));
     });
   });
 
@@ -192,11 +192,11 @@ describe('CliInterface', () => {
 {
   "foo": "test",
   "nodeBase": {
-    "version": 1,
-    "packages": [
-      "node-base-foo",
-      "node-base-baz"
-    ]
+    "version": "1.0.0",
+    "packages": {
+      "node-base-foo": "1.0.0",
+      "node-base-baz": "1.0.0"
+    }
   },
   "abc": []
 }`);
@@ -369,70 +369,87 @@ module.exports = (Config) => {
   describe('.addBasePackage()', () => {
     it('installs new packages', () => {
       iface.addBasePackage('foo');
-      expect(cp.spawnSync).toHaveBeenCalledWith('git', expect.arrayContaining([
+      expect(cp.spawnSync).toHaveBeenCalledWith('git', [
         'submodule',
         'add',
         expect.stringContaining('/foo.git'),
         'packages/foo/',
-      ]), expect.any(Object));
+      ], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": 1,
-    "packages": [
-      "node-base-foo",
-      "node-base-baz",
-      "foo"
-    ]
+    "version": "1.0.0",
+    "packages": {
+      "node-base-foo": "1.0.0",
+      "node-base-baz": "1.0.0",
+      "foo": "2.0.0"
+    }
   }
 }`);
     });
 
     it('re-installs existing packages', () => {
       iface.addBasePackage('node-base-baz');
-      expect(cp.spawnSync).not.toHaveBeenCalledWith('git', expect.arrayContaining([
+      expect(cp.spawnSync).not.toHaveBeenCalledWith('git', [
         'submodule',
         'add',
         expect.stringContaining('/node-base-baz.git'),
         'packages/node-base-baz/',
-      ]), expect.any(Object));
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', expect.arrayContaining(['i', 'packages/node-base-baz/']), expect.any(Object));
+      ], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', 'packages/node-base-baz/'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": 1,
-    "packages": [
-      "node-base-foo",
-      "node-base-baz"
-    ]
+    "version": "1.0.0",
+    "packages": {
+      "node-base-foo": "1.0.0",
+      "node-base-baz": "2.0.0"
+    }
   }
 }`);
     });
 
     it('installs dev packages', () => {
       iface.addBasePackage('foo', true);
-      expect(cp.spawnSync).toHaveBeenCalledWith('git', expect.arrayContaining([
+      expect(cp.spawnSync).toHaveBeenCalledWith('git', [
         'submodule',
         'add',
         expect.stringContaining('/foo.git'),
         'packages/foo/',
-      ]), expect.any(Object));
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', expect.arrayContaining(['i', '-D', 'packages/foo/']), expect.any(Object));
+      ], expect.any(Object));
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '-D', 'packages/foo/'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": 1,
-    "packages": [
-      "node-base-foo",
-      "node-base-baz",
-      "foo"
-    ]
+    "version": "1.0.0",
+    "packages": {
+      "node-base-foo": "1.0.0",
+      "node-base-baz": "1.0.0",
+      "foo": "2.0.0"
+    }
+  }
+}`);
+    });
+
+    it('installs the base package', () => {
+      iface.addBasePackage('node-base');
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', 'packages/node-base/'], expect.any(Object));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "version": "2.0.0",
+    "packages": {
+      "node-base-foo": "1.0.0",
+      "node-base-baz": "1.0.0"
+    }
   }
 }`);
     });
@@ -448,11 +465,11 @@ module.exports = (Config) => {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": 1,
-    "packages": [
-      "node-base-foo",
-      "node-base-baz"
-    ]
+    "version": "1.0.0",
+    "packages": {
+      "node-base-foo": "2.0.0",
+      "node-base-baz": "1.0.0"
+    }
   }
 }`);
     });
