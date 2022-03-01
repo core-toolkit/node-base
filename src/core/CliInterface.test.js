@@ -2,7 +2,7 @@ const CliInterface = require('./CliInterface');
 const Str = require('../utils/Str');
 
 
-const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage'];
+const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageLock', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage'];
 
 const files = {
   '/base/foo.txt': 'test foo',
@@ -18,6 +18,7 @@ const files = {
   '/base/packages/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
   '/base/packages/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
   '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":1,"packages":["node-base-foo","node-base-baz"]}}',
+  '/base/package-lock.json': '{"packages":{"packages/foo":{"version":"2.0.0"},"packages/node-base":{"version":"2.0.0"},"packages/node-base-foo":{"version":"2.0.0"},"packages/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
 const MakeApp = require('node-base');
@@ -163,6 +164,20 @@ describe('CliInterface', () => {
       iface.write('bar/baz.txt', 'test');
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/bar/baz.txt', 'test');
       expect(fs.mkdirSync).toHaveBeenLastCalledWith('/base/bar');
+    });
+  });
+
+  describe('.packageLock()', () => {
+    it('returns the contents of the package-lock.json file', () => {
+      const packageLock = iface.packageLock();
+      expect(packageLock).toEqual({
+        packages: {
+          "packages/foo": { version: "2.0.0" },
+          "packages/node-base": { version: "2.0.0" },
+          "packages/node-base-foo": { version: "2.0.0" },
+          "packages/node-base-baz": { version: "2.0.0" },
+        },
+      });
     });
   });
 

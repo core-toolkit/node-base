@@ -78,6 +78,8 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
       fs.writeFileSync(iface.resolve(path), data);
     },
 
+    packageLock: () => JSON.parse(iface.read('package-lock.json')),
+
     /**
      * @param {(packageObj: Object) => void} processor
      */
