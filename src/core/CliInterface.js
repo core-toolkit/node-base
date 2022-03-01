@@ -208,11 +208,12 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
     },
 
     /**
-     * @param {String} name
+     * @param {String} part
      * @param {Boolean} dev
      * @param {Object} args
      */
-    addBasePackage: (name, dev, args) => {
+    addBasePackage: async (part, dev, args) => {
+      const name = `node-base-${part}`;
       const packageName = `@core-toolkit/${name}`;
       if (dev) {
         iface.exec('npm', 'i', '-D', packageName);
@@ -222,17 +223,12 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
       const initPath = `node_modules/${packageName}/src/cli/commands/init.js`;
       if (iface.exists(initPath)) {
         const initFn = require(iface.resolve(initPath));
-        initFn(args, iface);
+        await initFn(args, iface);
       }
       iface.packageJSON((pkg) => {
         const lockFile = iface.packageLock();
         const { version } = lockFile.packages[packageName];
-
-        if (name === 'node-base') {
-          pkg.nodeBase.version = version;
-        } else {
-          pkg.nodeBase.packages[name] = version;
-        }
+        pkg.nodeBase.packages[name] = version;
       });
     },
   };

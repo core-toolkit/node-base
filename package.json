@@ -7,7 +7,8 @@
     "node-base-cli": "src/cli.js"
   },
   "scripts": {
-    "test": "jest --detectOpenHandles"
+    "test": "jest --detectOpenHandles",
+    "postinstall": "node src/cli.js init"
   },
   "repository": {
     "type": "git",

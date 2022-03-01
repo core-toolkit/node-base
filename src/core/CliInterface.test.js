@@ -178,7 +178,7 @@ describe('CliInterface', () => {
       const packageLock = iface.packageLock();
       expect(packageLock).toEqual({
         packages: {
-          "@core-toolkit/foo": { version: "2.0.0" },
+          "@core-toolkit/node-base-new": { version: "2.0.0" },
           "@core-toolkit/node-base": { version: "2.0.0" },
           "@core-toolkit/node-base-foo": { version: "2.0.0" },
           "@core-toolkit/node-base-baz": { version: "2.0.0" },
@@ -373,9 +373,9 @@ module.exports = (Config) => {
   });
 
   describe('.addBasePackage()', () => {
-    it('installs new packages', () => {
-      iface.addBasePackage('foo');
-      expect(cp.spawnSync).toHaveBeenCalledWith('npm', ['i', '@core-toolkit/foo'], expect.any(Object));
+    it('installs new packages', async () => {
+      await iface.addBasePackage('new');
+      expect(cp.spawnSync).toHaveBeenCalledWith('npm', ['i', '@core-toolkit/node-base-new'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -383,16 +383,16 @@ module.exports = (Config) => {
   "nodeBase": {
     "version": "1.0.0",
     "packages": {
-      "node-base-foo": "1.0.0",
+      "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0",
-      "foo": "2.0.0"
+      "node-base-new": "2.0.0"
     }
   }
 }`);
     });
 
-    it('re-installs existing packages', () => {
-      iface.addBasePackage('node-base-baz');
+    it('re-installs existing packages', async () => {
+      await iface.addBasePackage('baz');
       expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '@core-toolkit/node-base-baz'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
@@ -401,16 +401,16 @@ module.exports = (Config) => {
   "nodeBase": {
     "version": "1.0.0",
     "packages": {
-      "node-base-foo": "1.0.0",
+      "node-base-foo": "1.1.1",
       "node-base-baz": "2.0.0"
     }
   }
 }`);
     });
 
-    it('installs dev packages', () => {
-      iface.addBasePackage('foo', true);
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '-D', '@core-toolkit/foo'], expect.any(Object));
+    it('installs dev packages', async () => {
+      await iface.addBasePackage('new', true);
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '-D', '@core-toolkit/node-base-new'], expect.any(Object));
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -418,37 +418,20 @@ module.exports = (Config) => {
   "nodeBase": {
     "version": "1.0.0",
     "packages": {
-      "node-base-foo": "1.0.0",
+      "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0",
-      "foo": "2.0.0"
+      "node-base-new": "2.0.0"
     }
   }
 }`);
     });
 
-    it('installs the base package', () => {
-      iface.addBasePackage('node-base');
-      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '@core-toolkit/node-base'], expect.any(Object));
-      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
-{
-  "foo": "bar",
-  "baz": 123,
-  "nodeBase": {
-    "version": "2.0.0",
-    "packages": {
-      "node-base-foo": "1.0.0",
-      "node-base-baz": "1.0.0"
-    }
-  }
-}`);
-    });
-
-    it('runs initialization scripts for packages that include one', () => {
+    it('runs initialization scripts for packages that include one', async () => {
       const mock = jest.fn();
       jest.mock('/base/node_modules/@core-toolkit/node-base-foo/src/cli/commands/init.js', () => mock, { virtual: true });
 
-      iface.addBasePackage('node-base-foo', false, 'foo');
-      expect(mock).toHaveBeenLastCalledWith('foo', iface);
+      await iface.addBasePackage('foo', false, 'bar');
+      expect(mock).toHaveBeenLastCalledWith('bar', iface);
       expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
 {
   "foo": "bar",
@@ -463,10 +446,10 @@ module.exports = (Config) => {
 }`);
     });
 
-    it('does not finalize packages on failure', () => {
+    it('does not finalize packages on failure', async () => {
       jest.mock('/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js', () => () => { throw new Error(); }, { virtual: true });
 
-      expect(() => iface.addBasePackage('node-base-qux', false, 'foo')).toThrow();
+      await expect(iface.addBasePackage('qux', false, 'bar')).rejects.toThrow();
       expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
   });

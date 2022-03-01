@@ -1,12 +1,8 @@
-module.exports = (_, { copy, exec, exists, packageJSON, addBasePackage }) => {
+module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage, migrate }) => {
+
   // Setup git
   if (!exists('.git')) {
     exec('git', 'init');
-  }
-
-  // Setup npm
-  if (!exists('package.json')) {
-    exec('npm', 'init', '--yes');
   }
 
   packageJSON((pkg) => {
@@ -22,8 +18,9 @@ module.exports = (_, { copy, exec, exists, packageJSON, addBasePackage }) => {
     pkg.scripts.test = 'node-base-cli test';
   });
 
-  addBasePackage('node-base');
-  addBasePackage('node-base-dev', true);
+  await addBasePackage('dev', true);
+
+  await migrate();
 
   // Setup file structure
   copy('.gitignore');
