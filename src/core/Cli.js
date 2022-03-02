@@ -6,13 +6,18 @@ class InvalidArgument extends Error { }
 class InvalidInvocation extends Error { }
 
 /**
+ * @typedef ArgumentObject
+ * @property {String} name
+ * @property {String?} defaultValue
+ * @property {Boolean?} optional
+ * @property {Boolean?} rest
+ *
+ * @typedef {String|ArgumentObject} Argument
+ *
  * @typedef Command
  * @property {String} name
  * @property {Function} exec
- * @property {String[]?} args
- * @property {Object.<string, String>?} defaults
- * @property {String[]?} optional
- * @property {Boolean?} rest
+ * @property {Argument[]?} args
  * @property {String?} description
  * @property {String?} help
  *
@@ -65,10 +70,7 @@ const makeTable = (padding = 4) => {
 module.exports = ({ Core: { Project, CliInterface } }) => {
   const commands = [{
     name: 'help',
-    args: ['command'],
-    defaults: {},
-    optional: ['command'],
-    rest: false,
+    args: [{ name: 'command', rest: false, optional: true, defaultValue: undefined }],
     help: '',
     description: '',
     exec() {
@@ -88,27 +90,73 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
   const getCommand = (name) => commands.find((command) => command.name === name);
 
   /**
+   *
+   * @param {Argument} arg
+   * @returns {ArgumentObject}
+   */
+  const parseArg = (arg) => {
+    arg = typeof arg === 'string' ? { name: arg } : { ...arg };
+    arg.defaultValue ??= undefined;
+    arg.optional ??= false;
+    arg.rest ??= false;
+
+    if (arg.name[0] === '[' && arg.name[arg.name.length - 1] === ']') {
+      arg.optional = true;
+      arg.name = arg.name.substring(1, arg.name.length - 1);
+    }
+
+    const defaultIndex = arg.name.indexOf('=');
+    if (defaultIndex !== -1) {
+      arg.optional = true;
+      arg.defaultValue = arg.name.substring(defaultIndex + 1);
+      arg.name = arg.name.substring(0, defaultIndex);
+    }
+
+    if (arg.name.indexOf('...') === 0) {
+      arg.rest = true;
+      arg.name = arg.name.substring(3);
+    }
+
+    return arg;
+  };
+
+  /**
+   * @param {String[]|String?} value
+   * @param {ArgumentObject} arg
+   * @returns {{ value: any, missing: Boolean }}
+   */
+  const readArg = (value, arg) => {
+    if (!arg.rest) {
+      return {
+        value: value ?? arg.defaultValue,
+        missing: value === undefined,
+      };
+    }
+    return {
+      value: value.length || !arg.defaultValue ? value : [arg.defaultValue],
+      missing: !value.length,
+    }
+  };
+
+  /**
    * @param {String[]} args
    * @param {Command} command
    * @returns {{ args: Object.<string, String>, invalid: String[], error: (String|null) }}
    */
-  const parseArgs = (args, command) => {
+  const readArgs = (args, command) => {
     const parsed = {
       args: {},
       invalid: [],
     };
 
     for (let i = 0; i < command.args.length; ++i) {
-      const isRest = command.args.length - i === 1 && command.rest;
       const arg = command.args[i];
-      const suppliedArg = (
-        isRest ? (args.length >= command.args.length ? args.slice(i) : undefined) : args[i]
-      ) || command.defaults[arg];
+      const { value } = arg.rest ? readArg(args.slice(i), arg) : readArg(args[i], arg);
 
-      if ((isRest && suppliedArg.length) || (!isRest && suppliedArg) || command.optional.includes(arg)) {
-        parsed.args[arg] = suppliedArg;
+      if ((arg.rest && value.length) || (!arg.rest && value) || arg.optional) {
+        parsed.args[arg.name] = value;
       } else {
-        parsed.invalid.push(arg);
+        parsed.invalid.push(arg.name);
       }
     }
 
@@ -136,49 +184,18 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
 
     const full = Object.assign({
       args: [],
-      defaults: {},
-      optional: [],
-      rest: false,
       help: '',
     }, command);
 
     assert(Array.isArray(full.args), 'Property "args" must be an array');
-    assert(full.defaults && typeof full.defaults === 'object', 'Property "defaults" must be an object');
-    assert(Array.isArray(full.optional), 'Property "optional" must be an array');
-    assert(typeof full.rest === 'boolean', 'Property "rest" must be a boolean');
 
     for (let i = 0; i < full.args.length; ++i) {
-      let optional = false, defaultValue = undefined;
-
-      if (full.args[i][0] === '[' && full.args[i][full.args[i].length - 1] === ']') {
-        optional = true;
-        full.args[i] = full.args[i].substring(1, full.args[i].length - 1);
-      }
-
-      const defaultIndex = full.args[i].indexOf('=');
-      if (defaultIndex !== -1) {
-        optional = true;
-        defaultValue = full.args[i].substring(defaultIndex + 1);
-        full.args[i] = full.args[i].substring(0, defaultIndex);
-      }
-
-      if (full.args[i].indexOf('...') === 0) {
-        assert(full.args.length - i === 1, 'The rest argument must always come last');
-        full.rest = true;
-        defaultValue = defaultValue !== undefined ? [defaultValue] : [];
-        full.args[i] = full.args[i].substring(3);
-      }
-
-      optional ||= full.defaults[full.args[i]] !== undefined;
-
-      full.defaults[full.args[i]] = defaultValue ?? full.defaults[full.args[i]];
-      if (optional) {
-        full.optional.push(full.args[i]);
-      }
+      full.args[i] = parseArg(full.args[i]);
+      assert(!full.args[i].rest || full.args.length - i === 1, 'The rest argument must always come last');
     }
 
-    const firstOptional = full.args.findIndex((v) => full.optional.includes(v));
-    const lastMandatory = full.args.reduceRight((idx, v, i) => (idx > -1 || full.optional.includes(v) ? idx : i), -1);
+    const firstOptional = full.args.findIndex(({ optional }) => optional);
+    const lastMandatory = full.args.reduceRight((idx, { optional }, i) => (idx > -1 || optional ? idx : i), -1);
     assert(firstOptional === -1 || firstOptional > lastMandatory, 'Required arguments must come before optional ones');
 
     commands.push(full);
@@ -194,7 +211,7 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
       throw new InvalidCommand(`Unrecognized command "${cmd}"`);
     }
 
-    const parsed = parseArgs(args, command);
+    const parsed = readArgs(args, command);
     if (parsed.error) {
       throw new InvalidArgument(parsed.error);
     }
@@ -206,15 +223,15 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
 
   const usage = (cmd) => {
     const command = getCommand(cmd);
-    const args = command ? command.args.map((arg, i) => {
-      let out = arg;
-      if (command.rest && i === command.args.length - 1) {
-        out = `...${arg}`;
+    const args = command ? command.args.map((arg) => {
+      let out = arg.name;
+      if (arg.rest) {
+        out = `...${out}`;
       }
-      if (command.defaults[arg] !== undefined) {
-        out = `${arg}=${command.defaults[arg]}`;
+      if (arg.defaultValue !== undefined) {
+        out = `${out}=${arg.defaultValue}`;
       }
-      return command.optional.includes(arg) ? `[${out}]` : `<${out}>`;
+      return arg.optional ? `[${out}]` : `<${out}>`;
     }).join(' ') : '[...args]';
     const out = [`Usage: ${Project.cmd} ${command?.name || '<command>'} ${args}`];
 

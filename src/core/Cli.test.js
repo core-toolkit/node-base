@@ -37,7 +37,7 @@ describe('Cli', () => {
       const cli = Cli(app);
       cli.register({
         name: 'Test',
-        args: ['foo', 'bar'],
+        args: [{ name: 'foo' }, 'bar'],
         exec: () => { },
         description: 'Test command',
       });
@@ -47,8 +47,7 @@ describe('Cli', () => {
       const cli = Cli(app);
       cli.register({
         name: 'Test',
-        args: ['foo', 'bar=default2'],
-        defaults: { foo: 'default1' },
+        args: [{ name: 'foo', defaultValue: 'default1' }, 'bar=default2'],
         exec: () => { },
         description: 'Test command',
       });
@@ -58,8 +57,7 @@ describe('Cli', () => {
       const cli = Cli(app);
       cli.register({
         name: 'Test',
-        args: ['foo', 'bar', '[baz]'],
-        optional: ['bar'],
+        args: ['foo', { name: 'bar', optional: true }, '[baz]'],
         exec: () => { },
         description: 'Test command',
       });
@@ -76,8 +74,7 @@ describe('Cli', () => {
         },
         {
           name: 'Test2',
-          args: ['foo', 'bar'],
-          rest: true,
+          args: ['foo', { name: 'bar', rest: true }],
           exec: () => { },
           description: 'Test command 2',
         },
@@ -197,22 +194,6 @@ describe('Cli', () => {
       })).toThrow();
     });
 
-    it('does not register commands with missing or invalid defaults', () => {
-      const cli = Cli(app);
-      expect(() => cli.register({
-        name: 'Test1',
-        defaults: undefined,
-        description: 'Test command 1',
-        exec: () => { },
-      })).toThrow();
-      expect(() => cli.register({
-        name: 'Test2',
-        defaults: 'foo',
-        description: 'Test command 2',
-        exec: () => { },
-      })).toThrow();
-    });
-
     it('does not register commands with non-trailing defaults', () => {
       const cli = Cli(app);
       expect(() => cli.register({
@@ -223,22 +204,6 @@ describe('Cli', () => {
       })).toThrow();
     });
 
-    it('does not register commands with missing or invalid optional arguments', () => {
-      const cli = Cli(app);
-      expect(() => cli.register({
-        name: 'Test1',
-        optional: undefined,
-        description: 'Test command 1',
-        exec: () => { },
-      })).toThrow();
-      expect(() => cli.register({
-        name: 'Test2',
-        optional: 'foo',
-        description: 'Test command 2',
-        exec: () => { },
-      })).toThrow();
-    });
-
     it('does not register commands with non-trailing optional arguments', () => {
       const cli = Cli(app);
       expect(() => cli.register({
@@ -246,22 +211,6 @@ describe('Cli', () => {
         args: ['[foo]', 'bar'],
         exec: () => { },
         description: 'Test command',
-      })).toThrow();
-    });
-
-    it('does not register commands with missing or invalid rest arguments', () => {
-      const cli = Cli(app);
-      expect(() => cli.register({
-        name: 'Test1',
-        rest: undefined,
-        description: 'Test command 1',
-        exec: () => { },
-      })).toThrow();
-      expect(() => cli.register({
-        name: 'Test2',
-        rest: 'foo',
-        description: 'Test command 2',
-        exec: () => { },
       })).toThrow();
     });
 
@@ -289,19 +238,18 @@ describe('Cli', () => {
 
       cli.register({
         name: 'Test1',
-        args: ['arg1', 'arg2', 'arg3=baz', '[arg4]'],
-        defaults: { arg2: 'bar' },
+        args: ['arg1', { name: 'arg2', defaultValue: 'bar' }, 'arg3=baz', '[arg4]'],
         exec: mock.mockReturnValueOnce(123),
         description: 'Test command 1',
       });
 
       await expect(cli.run('Test1', 'foo')).resolves.toBe(123);
-      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
+      expect(mock).toHaveBeenLastCalledWith({
         arg1: 'foo',
         arg2: 'bar',
         arg3: 'baz',
         arg4: undefined,
-      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
+      }, 'cli-iface', { run: cli.run, list: cli.list });
 
       cli.register({
         name: 'Test2',
@@ -311,11 +259,11 @@ describe('Cli', () => {
       });
 
       await expect(cli.run('Test2', 'foo')).resolves.toBe(0);
-      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
+      expect(mock).toHaveBeenLastCalledWith({
         arg1: 'foo',
         arg2: undefined,
         arg3: ['bar'],
-      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
+      }, 'cli-iface', expect.any(Object));
 
       cli.register({
         name: 'Test3',
@@ -325,10 +273,10 @@ describe('Cli', () => {
       });
 
       await cli.run('Test3', 'foo', 'bar', 'baz');
-      expect(mock).toHaveBeenLastCalledWith(expect.objectContaining({
+      expect(mock).toHaveBeenLastCalledWith({
         arg1: 'foo',
         arg2: ['bar', 'baz'],
-      }), 'cli-iface', expect.objectContaining({ run: cli.run, list: cli.list }));
+      }, 'cli-iface', expect.any(Object));
     });
 
     it('does not run with empty or unknown commands', async () => {
@@ -397,8 +345,7 @@ describe('Cli', () => {
       });
       cli.register({
         name: 'Test2',
-        args: ['foo', 'bar'],
-        rest: true,
+        args: ['foo', { name: 'bar', rest: true }],
         exec: () => { },
         description: 'Test command 2',
         help: 'Test command instructions',
