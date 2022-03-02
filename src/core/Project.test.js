@@ -48,10 +48,10 @@ describe('Project', () => {
 
   it('identifies projects running under npm', () => {
     const nodeBase = {
-      version: '1.0.0',
       packages: {
-        api: '1.0.0',
-        mq: '1.0.0',
+        'node-base': '1.0.0',
+        'node-base-api': '1.0.0',
+        'node-base-mq': '1.0.0',
       },
     };
     jest.mock('../../package.json', () => ({ ...jest.requireActual('../../package.json'), nodeBase }));

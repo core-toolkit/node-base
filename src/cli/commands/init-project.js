@@ -18,9 +18,8 @@ module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage, mi
     pkg.scripts.test = 'node-base-cli test';
   });
 
+  await addBasePackage();
   await addBasePackage('dev', true);
-
-  await migrate();
 
   // Setup file structure
   copy('.gitignore');

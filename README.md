@@ -15,4 +15,5 @@ This framework fully manages the source code of the projects built with it. Ther
 ## Installation
 ```sh
 # in an empty directory
-npm i @core-toolkit/node-base
+npx @core-toolkit/node-base init
+```

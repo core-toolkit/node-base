@@ -2,7 +2,6 @@ const CliInterface = require('./CliInterface');
 const Str = require('../utils/Str');
 const { deepMockClear } = require('../utils/Mock');
 
-
 const methods = ['resolve', 'resolveTemplate', 'exists', 'mkdirp', 'exec', 'copy', 'read', 'readTemplate', 'write', 'packageLock', 'packageJSON', 'readTemplateAndReplace', 'template', 'addToConfig', 'addToRoot', 'addAppToRoot', 'addBasePackage', 'migrate'];
 
 const files = {
@@ -22,7 +21,8 @@ const files = {
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/require.js': 'const __name__ = __path__;\n',
   '/base/node_modules/@core-toolkit/node-base-foo/src/cli/templates/register.js': '  console.log(__name__);\n\n',
   '/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
-  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"version":"1.0.0","packages":{"node-base-foo":"1.1.1","node-base-baz":"1.0.0"}}}',
+  '/base/node_modules/@core-toolkit/node-base-new/src/cli/migrations/2.0.0.js': '',
+  '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"packages":{"node-base":"1.0.0","node-base-foo":"1.1.1","node-base-baz":"1.0.0"}}}',
   '/base/package-lock.json': '{"packages":{"@core-toolkit/node-base-new":{"version":"2.0.0"},"@core-toolkit/node-base":{"version":"2.0.0"},"@core-toolkit/node-base-foo":{"version":"2.0.0"},"@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
@@ -59,8 +59,16 @@ const iface = CliInterface(fs, cp, () => ['Util', 'Client', 'Service', 'UseCase'
   Core: { Project: { path: '/base', nodeBase: { packages: { 'node-base-foo': '1.1.1' }} } },
 });
 
+const migrationVersions = ['0.1.0', '1.0.0', '1.1.0', '1.1.1'];
+const mockMigrations = {};
+
+for (const mockVersion of migrationVersions) {
+  mockMigrations[mockVersion] = jest.fn();
+  jest.mock(`/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/${mockVersion}.js`, () => mockMigrations[mockVersion], { virtual: true });
+}
+
 describe('CliInterface', () => {
-  beforeEach(() => deepMockClear({ cp, fs }));
+  beforeEach(() => deepMockClear({ cp, fs, mockMigrations }));
 
   it('constructs a CLI interface', () => {
     for (const method of methods) {
@@ -198,8 +206,8 @@ describe('CliInterface', () => {
 {
   "foo": "test",
   "nodeBase": {
-    "version": "1.0.0",
     "packages": {
+      "node-base": "1.0.0",
       "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0"
     }
@@ -381,8 +389,8 @@ module.exports = (Config) => {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": "1.0.0",
     "packages": {
+      "node-base": "1.0.0",
       "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0",
       "node-base-new": "2.0.0"
@@ -399,8 +407,8 @@ module.exports = (Config) => {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": "1.0.0",
     "packages": {
+      "node-base": "1.0.0",
       "node-base-foo": "1.1.1",
       "node-base-baz": "2.0.0"
     }
@@ -416,11 +424,28 @@ module.exports = (Config) => {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": "1.0.0",
     "packages": {
+      "node-base": "1.0.0",
       "node-base-foo": "1.1.1",
       "node-base-baz": "1.0.0",
       "node-base-new": "2.0.0"
+    }
+  }
+}`);
+    });
+
+    it('installs the base package', async () => {
+      await iface.addBasePackage();
+      expect(cp.spawnSync).toHaveBeenLastCalledWith('npm', ['i', '@core-toolkit/node-base'], expect.any(Object));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/base/package.json', `\
+{
+  "foo": "bar",
+  "baz": 123,
+  "nodeBase": {
+    "packages": {
+      "node-base": "2.0.0",
+      "node-base-foo": "1.1.1",
+      "node-base-baz": "1.0.0"
     }
   }
 }`);
@@ -437,13 +462,21 @@ module.exports = (Config) => {
   "foo": "bar",
   "baz": 123,
   "nodeBase": {
-    "version": "1.0.0",
     "packages": {
+      "node-base": "1.0.0",
       "node-base-foo": "2.0.0",
       "node-base-baz": "1.0.0"
     }
   }
 }`);
+
+      for (const version of migrationVersions.slice(0, 3)) {
+        expect(fs.writeFileSync).not.toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
+      }
+
+      for (const version of migrationVersions.slice(3)) {
+        expect(fs.writeFileSync).toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
+      }
     });
 
     it('does not finalize packages on failure', async () => {
@@ -456,23 +489,25 @@ module.exports = (Config) => {
 
   describe('.migrate()', () => {
     it('runs the relevant migration scripts', async () => {
-      const versions = ['0.1.0', '1.0.0', '1.1.0', '1.1.1'];
-      const mocks = {};
-
-      for (const mockVersion of versions) {
-        mocks[mockVersion] = jest.fn();
-        jest.mock(`/base/node_modules/@core-toolkit/node-base-foo/src/cli/migrations/${mockVersion}.js`, () => mocks[mockVersion], { virtual: true });
-      }
       await iface.migrate('node-base-foo');
 
-      for (const version of versions.slice(0, 3)) {
+      for (const version of migrationVersions.slice(0, 3)) {
         expect(fs.writeFileSync).not.toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
-        expect(mocks[version]).not.toHaveBeenCalled();
+        expect(mockMigrations[version]).not.toHaveBeenCalled();
       }
 
-      for (const version of versions.slice(3)) {
+      for (const version of migrationVersions.slice(3)) {
         expect(fs.writeFileSync).toHaveBeenCalledWith('/base/package.json', expect.stringContaining(`"node-base-foo": "${version}"`));
-        expect(mocks[version]).toHaveBeenCalled();
+        expect(mockMigrations[version]).toHaveBeenCalledWith(iface);
+      }
+    });
+
+    it('does not run any migrations if the package is newly installed', async () => {
+      await iface.migrate('node-base-new');
+
+      for (const version of migrationVersions) {
+        expect(fs.writeFileSync).not.toHaveBeenCalled();
+        expect(mockMigrations[version]).not.toHaveBeenCalled();
       }
     });
   });

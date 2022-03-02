@@ -54,7 +54,7 @@ module.exports = (process) => {
     project.name = packageJson.name;
     project.packages = Object.keys(packageJson.dependencies);
     project.nodeBase = packageJson.nodeBase ?? project.nodeBase;
-    project.initialized = 'version' in project.nodeBase;
+    project.initialized = 'node-base' in project.nodeBase.packages;
   }
 
   return project;

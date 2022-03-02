@@ -192,6 +192,9 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
     },
 
     migrate: async (name) => {
+      if (!(name in Project.nodeBase.packages)) {
+        return;
+      }
       const version = Project.nodeBase.packages[name];
       const semver = toSemver(version);
       const migrationsPath = `${Project.path}/node_modules/@core-toolkit/${name}/src/cli/migrations`;
@@ -213,7 +216,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      * @param {Object} args
      */
     addBasePackage: async (part, dev, args) => {
-      const name = `node-base-${part}`;
+      const name = part ? `node-base-${part}` : 'node-base';
       const packageName = `@core-toolkit/${name}`;
       if (dev) {
         iface.exec('npm', 'i', '-D', packageName);
@@ -225,6 +228,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         const initFn = require(iface.resolve(initPath));
         await initFn(args, iface);
       }
+      await iface.migrate(name);
       iface.packageJSON((pkg) => {
         const lockFile = iface.packageLock();
         const { version } = lockFile.packages[packageName];
