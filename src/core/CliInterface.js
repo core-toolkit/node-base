@@ -83,11 +83,11 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
     packageLock: () => JSON.parse(iface.read('package-lock.json')),
 
     /**
-     * @param {(packageObj: Object) => void} processor
+     * @param {(packageObj: Object) => Promise<void>} processor
      */
-    packageJSON: (processor) => {
+    packageJSON: async (processor) => {
       const pkg = JSON.parse(iface.read('package.json'));
-      processor(pkg);
+      await processor(pkg);
       iface.write('package.json', JSON.stringify(pkg, undefined, 2));
     },
 
@@ -206,7 +206,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         }
         const migrationFn = require(`${migrationsPath}/${migration}`);
         await migrationFn(iface);
-        iface.packageJSON((pkg) => (pkg.nodeBase.packages[name] = version));
+        await iface.packageJSON((pkg) => (pkg.nodeBase.packages[name] = version));
       }
     },
 
@@ -229,7 +229,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         await initFn(args, iface);
       }
       await iface.migrate(name);
-      iface.packageJSON((pkg) => {
+      await iface.packageJSON((pkg) => {
         const lockFile = iface.packageLock();
         const { version } = lockFile.packages[packageName];
         pkg.nodeBase.packages[name] = version;

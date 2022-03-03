@@ -1,11 +1,11 @@
-module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage, migrate }) => {
-
+module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage }, { prompt }) => {
   // Setup git
   if (!exists('.git')) {
     exec('git', 'init');
   }
 
-  packageJSON((pkg) => {
+  await packageJSON(async (pkg) => {
+    pkg.name ??= await prompt(`name=${Project.name}`);
     pkg.main = 'src/index.js';
     pkg.dependencies ??= {};
     pkg.devDependencies ??= {};

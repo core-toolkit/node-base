@@ -196,8 +196,8 @@ describe('CliInterface', () => {
   });
 
   describe('.packageJSON()', () => {
-    it('opens the package.json file for reading and writes back all changes', () => {
-      iface.packageJSON((pkg) => {
+    it('opens the package.json file for reading and writes back all changes', async () => {
+      await iface.packageJSON(async (pkg) => {
         pkg.foo = 'test';
         pkg.abc = [];
         delete pkg.baz;
