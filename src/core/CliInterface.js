@@ -86,7 +86,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
      * @param {(packageObj: Object) => Promise<void>} processor
      */
     packageJSON: async (processor) => {
-      const pkg = JSON.parse(iface.read('package.json'));
+      const pkg = iface.exists('package.json') ? JSON.parse(iface.read('package.json')) : {};
       await processor(pkg);
       iface.write('package.json', JSON.stringify(pkg, undefined, 2));
     },

@@ -10,7 +10,7 @@ module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage }, 
     pkg.dependencies ??= {};
     pkg.devDependencies ??= {};
     pkg.nodeBase ??= {
-      packages: [],
+      packages: {},
     };
     pkg.scripts ??= {};
     pkg.scripts.start = 'node src/index.js';

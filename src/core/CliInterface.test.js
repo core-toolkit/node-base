@@ -54,10 +54,12 @@ const fs = {
   writeFileSync: jest.fn(),
   readdirSync: jest.fn((path) => Object.keys(files).filter((file) => file.startsWith(path)).map((file) => file.substring(path.length + 1))),
 };
-const iface = CliInterface(fs, cp, () => ['Util', 'Client', 'Service', 'UseCase'])({
+const cliDependencies = {
   Util: { Func: { memoize: (fn) => fn }, Str },
-  Core: { Project: { path: '/base', nodeBase: { packages: { 'node-base-foo': '1.1.1' }} } },
-});
+  Core: { Project: { path: '/base', nodeBase: { packages: { 'node-base-foo': '1.1.1' } } } },
+};
+const MakeCliInterface = (cliDependencies) => CliInterface(fs, cp, () => ['Util', 'Client', 'Service', 'UseCase'])(cliDependencies);
+const iface = MakeCliInterface(cliDependencies);
 
 const migrationVersions = ['0.1.0', '1.0.0', '1.1.0', '1.1.1'];
 const mockMigrations = {};
@@ -213,6 +215,15 @@ describe('CliInterface', () => {
     }
   },
   "abc": []
+}`);
+    });
+
+    it('creates a package.json if it does not exist', async () => {
+      const iface = MakeCliInterface({ ...cliDependencies, Core: { Project: { path: '/', nodeBase: { packages: {} } } } });
+      await iface.packageJSON(async (pkg) => (pkg.foo = 'bar'));
+      expect(fs.writeFileSync).toHaveBeenLastCalledWith('/package.json', `\
+{
+  "foo": "bar"
 }`);
     });
   });
