@@ -1,15 +1,23 @@
 const Cli = require('./Cli');
+
+const { PassThrough } = require('stream');
+const { deepMockClear } = require('../utils/Mock');
+
 const app = { Core: { Project: { path: '/' }, CliInterface: 'cli-iface' } };
+const process = { chdir: jest.fn() };
 
 describe('Cli', () => {
+  beforeEach(() => deepMockClear(process));
   it('creates a CLI', () => {
-    const cli = Cli(app);
+    const MakeCli = Cli(process);
+    expect(MakeCli).toBeInstanceOf(Function);
+    const cli = MakeCli(app);
     expect(cli).toBeInstanceOf(Object);
   });
 
   describe('.register()', () => {
     it('registers single commands', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         exec: () => { },
@@ -18,7 +26,7 @@ describe('Cli', () => {
     });
 
     it('registers multiple commands', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register([
         {
           name: 'Test1',
@@ -34,7 +42,7 @@ describe('Cli', () => {
     });
 
     it('registers commands with arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         args: [{ name: 'foo' }, 'bar'],
@@ -44,7 +52,7 @@ describe('Cli', () => {
     });
 
     it('registers commands with default arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         args: [{ name: 'foo', defaultValue: 'default1' }, 'bar=default2'],
@@ -54,7 +62,7 @@ describe('Cli', () => {
     });
 
     it('registers commands with optional arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         args: ['foo', { name: 'bar', optional: true }, '[baz]'],
@@ -64,7 +72,7 @@ describe('Cli', () => {
     });
 
     it('registers commands with rest arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register([
         {
           name: 'Test1',
@@ -82,7 +90,7 @@ describe('Cli', () => {
     });
 
     it('registers commands with additional instructions', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         exec: () => { },
@@ -92,7 +100,7 @@ describe('Cli', () => {
     });
 
     it('skips registering commands with the same name', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         exec: () => { },
@@ -109,13 +117,13 @@ describe('Cli', () => {
     });
 
     it('does not register missing or invalid commands', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register()).toThrow();
       expect(() => cli.register('foo')).toThrow();
     });
 
     it('does not register commands with missing or invalid names', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         exec: () => { },
         description: 'Test command',
@@ -133,7 +141,7 @@ describe('Cli', () => {
     });
 
     it('does not allow registering commands with the same name', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test',
         exec: () => { },
@@ -148,7 +156,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with missing or invalid functions', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test 1',
         description: 'Test command 1',
@@ -161,7 +169,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with missing or invalid descriptions', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test1',
         exec: () => { },
@@ -179,7 +187,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with missing or invalid arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test1',
         args: undefined,
@@ -195,7 +203,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with non-trailing defaults', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test',
         args: ['foo=123', 'bar'],
@@ -205,7 +213,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with non-trailing optional arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test',
         args: ['[foo]', 'bar'],
@@ -215,7 +223,7 @@ describe('Cli', () => {
     });
 
     it('does not register commands with non-trailing rest arguments', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       expect(() => cli.register({
         name: 'Test1',
         args: ['...foo', 'bar'],
@@ -233,7 +241,7 @@ describe('Cli', () => {
 
   describe('.run()', () => {
     it('runs the supplied command', async () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       const mock = jest.fn();
 
       cli.register({
@@ -249,7 +257,8 @@ describe('Cli', () => {
         arg2: 'bar',
         arg3: 'baz',
         arg4: undefined,
-      }, 'cli-iface', { run: cli.run, list: cli.list });
+      }, 'cli-iface', { run: cli.run, list: cli.list, prompt: expect.any(Function) });
+      expect(process.chdir).toHaveBeenCalledWith('/');
 
       cli.register({
         name: 'Test2',
@@ -280,13 +289,13 @@ describe('Cli', () => {
     });
 
     it('does not run with empty or unknown commands', async () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       await expect(cli.run()).rejects.toBeInstanceOf(cli.MissingCommand);
       await expect(cli.run('foo')).rejects.toBeInstanceOf(cli.InvalidCommand);
     });
 
     it('does not run with missing arguments', async () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       const mock = jest.fn();
 
       cli.register({
@@ -311,14 +320,14 @@ describe('Cli', () => {
     });
 
     it('does not allow executing the "help" command directly', async () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       await expect(cli.run('help')).rejects.toBeInstanceOf(cli.InvalidInvocation);
     });
   });
 
   describe('.usage()', () => {
     it('returns the list of available commands', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test1',
         exec: () => { },
@@ -336,7 +345,7 @@ describe('Cli', () => {
     });
 
     it('returns the usage information of a specified command', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test1',
         args: ['foo', 'bar=123'],
@@ -362,7 +371,7 @@ describe('Cli', () => {
 
   describe('.list()', () => {
     it('returns a list of registered commands', () => {
-      const cli = Cli(app);
+      const cli = Cli(process)(app);
       cli.register({
         name: 'Test1',
         exec: () => { },
@@ -376,6 +385,48 @@ describe('Cli', () => {
 
       const commands = cli.list();
       expect(commands).toEqual(['Test1', 'Test2']);
+    });
+  });
+
+  describe('.prompt()', () => {
+    beforeEach(() => (process.stdin = PassThrough()));
+
+    it('fetches single values', async () => {
+      const cli = Cli(process)(app);
+      process.stdin.push('foo\n');
+      await expect(cli.prompt('name')).resolves.toBe('foo');
+
+      process.stdin.push('\n');
+      await expect(cli.prompt('name=bar')).resolves.toBe('bar');
+    });
+
+    it('fetches multiple values', async () => {
+      const cli = Cli(process)(app);
+      process.stdin.push('foo\n');
+      process.stdin.push('bar\n');
+      process.stdin.push('\n');
+      await expect(cli.prompt('...name')).resolves.toEqual(['foo', 'bar']);
+
+      process.stdin.push('\n');
+      await expect(cli.prompt('...name=baz')).resolves.toEqual(['baz']);
+    });
+
+    it('retries until it fetches mandatory single values', async () => {
+      const cli = Cli(process)(app);
+      process.stdin.push('\n');
+      process.stdin.push('\n');
+      process.stdin.push('foo\n');
+      await expect(cli.prompt('name')).resolves.toBe('foo');
+    });
+
+    it('retries until it fetches mandatory multiple values', async () => {
+      const cli = Cli(process)(app);
+      process.stdin.push('\n');
+      process.stdin.push('\n');
+      process.stdin.push('foo\n');
+      process.stdin.push('bar\n');
+      process.stdin.push('\n');
+      await expect(cli.prompt('...name')).resolves.toEqual(['foo', 'bar']);
     });
   });
 });

@@ -38,7 +38,7 @@ module.exports = (Config, ...middleware) => {
   app.register('Core', 'Logger', () => Logger(console));
   app.register('Core', 'ApiClient', () => ApiClient(axios));
   app.register('Core', 'CliInterface', CliInterface(fs, child_process, app.getTypes));
-  app.register('Core', 'Cli', Cli);
+  app.register('Core', 'Cli', Cli(process));
 
   app.register('Service', 'CacheService', () => CacheService());
 

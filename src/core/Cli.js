@@ -61,13 +61,13 @@ const makeTable = (padding = 4) => {
 };
 
 /**
- * @param {Object} app
- * @param {Object} app.Core
- * @param {Object} app.Core.Project
- * @param {String} app.Core.Project.cmd
- * @returns {Cli}
+ * @param {Object} process
+ * @param {Function} process.chdir
+ * @param {ReadableStream} process.stdin
+ * @param {WritableStream} process.stdout
+ * @returns {({ Core: { Project: { cmd: String }}}) => Cli}
  */
-module.exports = ({ Core: { Project, CliInterface } }) => {
+module.exports = (process) => ({ Core: { Project, CliInterface } }) => {
   const commands = [{
     name: 'help',
     args: [{ name: 'command', rest: false, optional: true, defaultValue: undefined }],
@@ -77,6 +77,17 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
       throw new InvalidInvocation();
     },
   }];
+
+  const question = (text) => new Promise((res) => {
+    const readline = require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    readline.question(text, (arg) => {
+      readline.close();
+      res(arg);
+    });
+  });
 
   /**
    * @returns {String[]}
@@ -125,18 +136,10 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
    * @param {ArgumentObject} arg
    * @returns {{ value: any, missing: Boolean }}
    */
-  const readArg = (value, arg) => {
-    if (!arg.rest) {
-      return {
-        value: value ?? arg.defaultValue,
-        missing: value === undefined,
-      };
-    }
-    return {
-      value: value.length || !arg.defaultValue ? value : [arg.defaultValue],
-      missing: !value.length,
-    }
-  };
+  const readArg = (value, arg) => ({
+    value: value ?? arg.defaultValue,
+    missing: value === undefined,
+  });
 
   /**
    * @param {String[]} args
@@ -151,10 +154,14 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
 
     for (let i = 0; i < command.args.length; ++i) {
       const arg = command.args[i];
-      const { value } = arg.rest ? readArg(args.slice(i), arg) : readArg(args[i], arg);
+      const supplied = args.slice(i, arg.rest ? undefined : i + 1)
+        .concat(undefined)
+        .map((v) => readArg(v, arg))
+        .filter(({ missing }, i) => !missing || !i)
+        .map(({ value }) => value);
 
-      if ((arg.rest && value.length) || (!arg.rest && value) || arg.optional) {
-        parsed.args[arg.name] = value;
+      if (supplied[0] || arg.optional) {
+        parsed.args[arg.name] = arg.rest ? supplied : supplied[0];
       } else {
         parsed.invalid.push(arg.name);
       }
@@ -163,6 +170,30 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     parsed.error = parsed.invalid.length ? `Missing argument "${parsed.invalid[0]}"` : null;
 
     return parsed;
+  };
+
+  const prompt = async (arg) => {
+    arg = parseArg(arg);
+
+    const answers = [];
+    while (true) {
+      const defaultValue = !answers.length && arg.defaultValue ? ` (default: ${arg.defaultValue})` : '';
+
+      const name = arg.rest ? `${arg.name} ${answers.length + 1}` : arg.name;
+
+      const answer = await question(`${name}${defaultValue}: `);
+      const { value, missing } = readArg(answer || undefined, arg);
+
+      if (value && (!missing || !answers.length)) {
+        answers.push(value);
+      } else if (!answers.length && !arg.optional) {
+        continue;
+      }
+
+      if (missing || !arg.rest) {
+        return arg.rest ? answers : answers[0];
+      }
+    }
   };
 
   const register = (command, skipDuplicate) => {
@@ -217,7 +248,7 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     }
 
     process.chdir(Project.path);
-    const code = await command.exec(parsed.args, CliInterface, { list, run });
+    const code = await command.exec(parsed.args, CliInterface, { list, run, prompt });
     return Number.isInteger(code) ? code : 0;
   };
 
@@ -261,5 +292,6 @@ module.exports = ({ Core: { Project, CliInterface } }) => {
     run,
     usage,
     list,
+    prompt,
   };
 };
