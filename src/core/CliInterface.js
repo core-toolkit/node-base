@@ -231,7 +231,7 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
       await iface.migrate(name);
       await iface.packageJSON((pkg) => {
         const lockFile = iface.packageLock();
-        const { version } = lockFile.packages[packageName];
+        const { version } = lockFile.packages[`node_modules/${packageName}`];
         pkg.nodeBase.packages[name] = version;
       });
     },

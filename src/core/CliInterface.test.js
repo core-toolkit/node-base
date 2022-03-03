@@ -23,7 +23,7 @@ const files = {
   '/base/node_modules/@core-toolkit/node-base-qux/src/cli/commands/init.js': 'module.exports = () => {};',
   '/base/node_modules/@core-toolkit/node-base-new/src/cli/migrations/2.0.0.js': '',
   '/base/package.json': '{"foo":"bar","baz":123,"nodeBase":{"packages":{"node-base":"1.0.0","node-base-foo":"1.1.1","node-base-baz":"1.0.0"}}}',
-  '/base/package-lock.json': '{"packages":{"@core-toolkit/node-base-new":{"version":"2.0.0"},"@core-toolkit/node-base":{"version":"2.0.0"},"@core-toolkit/node-base-foo":{"version":"2.0.0"},"@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
+  '/base/package-lock.json': '{"packages":{"node_modules/@core-toolkit/node-base-new":{"version":"2.0.0"},"node_modules/@core-toolkit/node-base":{"version":"2.0.0"},"node_modules/@core-toolkit/node-base-foo":{"version":"2.0.0"},"node_modules/@core-toolkit/node-base-baz":{"version":"2.0.0" }}}',
   '/base/src/config.js': 'exports.main = 1;\n',
   '/base/src/root.js': `\
 const MakeApp = require('@core-toolkit/node-base');
@@ -189,10 +189,10 @@ describe('CliInterface', () => {
       const packageLock = iface.packageLock();
       expect(packageLock).toEqual({
         packages: {
-          "@core-toolkit/node-base-new": { version: "2.0.0" },
-          "@core-toolkit/node-base": { version: "2.0.0" },
-          "@core-toolkit/node-base-foo": { version: "2.0.0" },
-          "@core-toolkit/node-base-baz": { version: "2.0.0" },
+          "node_modules/@core-toolkit/node-base-new": { version: "2.0.0" },
+          "node_modules/@core-toolkit/node-base": { version: "2.0.0" },
+          "node_modules/@core-toolkit/node-base-foo": { version: "2.0.0" },
+          "node_modules/@core-toolkit/node-base-baz": { version: "2.0.0" },
         },
       });
     });

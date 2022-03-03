@@ -1,6 +1,6 @@
 {
   "name": "@core-toolkit/node-base",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Modular application framework",
   "main": "src/index.js",
   "bin": {
