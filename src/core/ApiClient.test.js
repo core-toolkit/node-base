@@ -17,7 +17,7 @@ describe('ApiClient', () => {
     const factory = ApiClient(mock);
     const client = factory('bar');
     await expect(client({})).resolves.toBe('foo');
-    expect(mock).toHaveBeenCalledWith(expect.objectContaining({ baseURL: 'bar', headers: expect.any(Object) }));
+    expect(mock).toHaveBeenCalledWith({ baseURL: 'bar', headers: expect.any(Object) });
   });
 
   it('applies extra client headers', async () => {
@@ -43,11 +43,12 @@ describe('ApiClient', () => {
     const factory = ApiClient(mock);
     const client = factory('bar', undefined, { method: 'TEST', TestOption: 'Test1' });
     await client({ TestOption: 'Test2', baseURL: 'foo' });
-    expect(mock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mock).toHaveBeenCalledWith({
       baseURL: 'foo',
       method: 'TEST',
       TestOption: 'Test2',
-    }));
+      headers: expect.any(Object),
+    });
   });
 
   it('merges and overrides headers from extra request options', async () => {

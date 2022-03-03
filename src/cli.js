@@ -64,7 +64,7 @@ const registerCommands = (cli, project) => {
       const { status } = exec('jest', '--detectOpenHandles', ...paths);
       return status;
     },
-  })
+  });
 };
 
 (async (app) => {

@@ -32,7 +32,7 @@ describe('Application', () => {
       app.register('TestType2', 'Test', mock);
       await app.start();
 
-      expect(mock).toHaveBeenCalledWith(expect.objectContaining({ TestType1: expect.any(Object) }));
+      expect(mock).toHaveBeenCalledWith({ TestType1: expect.any(Object) });
     });
 
     it('does not register duplicate types', () => {
@@ -68,15 +68,12 @@ describe('Application', () => {
       await app.start();
 
       expect(Test1).toHaveBeenCalledWith(expect.any(Object), 'foo');
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({ Test1: 'bar' }));
-      expect(Test3).toHaveBeenCalledWith(
-        expect.objectContaining({
-          TestType2: {
-            Test2: { qux: 123, extra: 'Test2' },
-          },
-        }),
-        'foo',
-      );
+      expect(Test2).toHaveBeenCalledWith({ Test1: 'bar' });
+      expect(Test3).toHaveBeenCalledWith({
+        TestType2: {
+          Test2: { qux: 123, extra: 'Test2' },
+        },
+      }, 'foo');
     });
 
     it('does not register invalid middleware', async () => {
@@ -93,9 +90,7 @@ describe('Application', () => {
       app.register('TestType2', 'Test2', Test2);
       await app.start();
 
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1 }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1 } });
     });
   });
 
@@ -112,8 +107,8 @@ describe('Application', () => {
       app.register('TestType2', 'Test2', Test2);
       await app.start();
 
-      expect(Test1).not.toHaveBeenCalledWith(expect.objectContaining({ TestType1: expect.any(Object) }));
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({ TestType1: expect.any(Object) }));
+      expect(Test1).not.toHaveBeenCalledWith({ TestType1: expect.any(Object) });
+      expect(Test2).toHaveBeenCalledWith({ TestType1: expect.any(Object) });
     });
 
     it('does not allow registering parameters for unknown types', () => {
@@ -161,7 +156,7 @@ describe('Application', () => {
       await app.start();
 
       expect(Test2).toHaveBeenCalledWith(Test1);
-      expect(Test3).toHaveBeenCalledWith(expect.objectContaining({ TestType2: { Test2: 20 }}));
+      expect(Test3).toHaveBeenCalledWith({ TestType2: { Test2: 20 }});
     });
 
     it('does not register invalid middleware', async () => {
@@ -178,9 +173,7 @@ describe('Application', () => {
       app.register('TestType2', 'Test2', Test2);
       await app.start();
 
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1 }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1 } });
     });
 
     it('does not register middleware for unknown types', () => {
@@ -420,9 +413,7 @@ describe('Application', () => {
       expect(Test1).toHaveBeenCalledTimes(1);
       expect(Test2).toHaveBeenCalledWith(expect.any(Object));
       expect(Test2).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1: 'foo' }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1: 'foo' } });
     });
 
     it('registers asynchronous components', async () => {
@@ -436,9 +427,7 @@ describe('Application', () => {
       app.register('TestType2', 'Test2', Test2);
       await app.start();
       expect(Test2).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1 }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1 } });
     });
 
     it('registers plain object components', async () => {
@@ -452,9 +441,7 @@ describe('Application', () => {
       app.register('TestType2', 'Test2', Test2);
       await app.start();
       expect(Test2).toHaveBeenCalledTimes(1);
-      expect(Test2).toHaveBeenCalledWith(expect.objectContaining({
-        TestType1: expect.objectContaining({ Test1 }),
-      }));
+      expect(Test2).toHaveBeenCalledWith({ TestType1: { Test1 } });
     });
 
     it('does not allow registering components with the same name', async () => {
