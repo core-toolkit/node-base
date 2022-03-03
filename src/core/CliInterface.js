@@ -235,6 +235,8 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
         pkg.nodeBase.packages[name] = version;
       });
     },
+
+    Project,
   };
 
   return iface;

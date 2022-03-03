@@ -76,6 +76,7 @@ describe('CliInterface', () => {
     for (const method of methods) {
       expect(iface).toHaveProperty(method, expect.any(Function));
     }
+    expect(iface).toHaveProperty('Project', cliDependencies.Core.Project);
   });
 
   describe('.resolve()', () => {

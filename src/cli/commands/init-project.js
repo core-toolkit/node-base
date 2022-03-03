@@ -1,4 +1,4 @@
-module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage }, { prompt }) => {
+module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage, Project }, { prompt }) => {
   // Setup git
   if (!exists('.git')) {
     exec('git', 'init');
