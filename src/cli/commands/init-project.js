@@ -22,7 +22,7 @@ module.exports = async (_, { copy, exec, exists, packageJSON, addBasePackage, Pr
   await addBasePackage('dev', true);
 
   // Setup file structure
-  copy('.gitignore');
+  copy('gitignore', '.gitignore');
   copy('.dockerignore');
   copy('Dockerfile');
   copy('jest.config.js');

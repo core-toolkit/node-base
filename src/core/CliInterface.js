@@ -49,10 +49,11 @@ module.exports = (fs, child_process, getTypes) => ({ Util: { Func, Str }, Core: 
 
     /**
      * @param {String} path
+     * @param {String?} target
      * @param {Boolean} overwrite
      */
-    copy: (path, overwrite = false) => {
-      const target = path.split(':').pop();
+    copy: (path, target, overwrite = false,) => {
+      target ??= path.split(':').pop();
       iface.mkdirp(dirname(target));
       if (overwrite || !iface.exists(target)) {
         fs.copyFileSync(iface.resolveTemplate(path), iface.resolve(target));

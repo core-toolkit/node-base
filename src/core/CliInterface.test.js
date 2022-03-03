@@ -151,7 +151,7 @@ describe('CliInterface', () => {
     });
 
     it('overwrites existing targets', () => {
-      iface.copy('foo.txt', true);
+      iface.copy('foo.txt', undefined, true);
       expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base/src/cli/templates/foo.txt', '/base/foo.txt');
     });
 
@@ -159,6 +159,12 @@ describe('CliInterface', () => {
       iface.copy('baz:bar/baz.js');
       expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/bar/baz.js', '/base/bar/baz.js');
       expect(fs.mkdirSync).toHaveBeenLastCalledWith('/base/bar');
+    });
+
+    it('copes template to a different destination', () => {
+      iface.copy('baz:bar/baz.js', 'qux/quux.js');
+      expect(fs.copyFileSync).toHaveBeenLastCalledWith('/base/node_modules/@core-toolkit/node-base-baz/src/cli/templates/bar/baz.js', '/base/qux/quux.js');
+      expect(fs.mkdirSync).toHaveBeenLastCalledWith('/base/qux');
     });
   });
 
