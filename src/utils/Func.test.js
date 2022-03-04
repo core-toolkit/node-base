@@ -29,4 +29,31 @@ describe('Func', () => {
       expect(mock).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('.callbackify()', () => {
+    it('calbackifies the supplied async function and produces results', (done) => {
+      const mockFn = jest.fn(async () => 'foo');
+      const callbackified = Func.callbackify(mockFn);
+
+      const mockCallback = jest.fn((error, result) => {
+        expect(error).toBe(undefined);
+        expect(result).toBe('foo');
+        expect(mockFn).toHaveBeenCalledWith('bar', 'baz');
+        done();
+      });
+      callbackified('bar', 'baz', mockCallback);
+    });
+
+    it('calbackifies the supplied async function and produces errors', (done) => {
+      const mockFn = jest.fn().mockRejectedValue(new Error('foo'));
+      const callbackified = Func.callbackify(mockFn);
+
+      const mockCallback = jest.fn((error) => {
+        expect(error).toEqual(new Error('foo'));
+        expect(mockFn).toHaveBeenCalled();
+        done();
+      });
+      callbackified(mockCallback);
+    });
+  });
 });
