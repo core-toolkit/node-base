@@ -1,6 +1,6 @@
 {
   "name": "@core-toolkit/node-base",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Modular application framework",
   "main": "src/index.js",
   "bin": {
@@ -23,6 +23,6 @@
     "axios": "^0.25.0"
   },
   "devDependencies": {
-    "@core-toolkit/node-base-dev": "^0.0.1"
+    "@core-toolkit/node-base-dev": "0.x"
   }
 }
