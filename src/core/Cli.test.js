@@ -286,6 +286,19 @@ describe('Cli', () => {
         arg1: 'foo',
         arg2: ['bar', 'baz'],
       }, 'cli-iface', expect.any(Object));
+
+      cli.register({
+        name: 'Test4',
+        args: ['arg1', '[...arg2]'],
+        exec: mock,
+        description: 'Test command 4',
+      });
+
+      await cli.run('Test4', 'foo');
+      expect(mock).toHaveBeenLastCalledWith({
+        arg1: 'foo',
+        arg2: [],
+      }, 'cli-iface', expect.any(Object));
     });
 
     it('does not run with empty or unknown commands', async () => {
@@ -398,6 +411,9 @@ describe('Cli', () => {
 
       process.stdin.push('\n');
       await expect(cli.prompt('name=bar')).resolves.toBe('bar');
+
+      process.stdin.push('\n');
+      await expect(cli.prompt('[name]')).resolves.toBe(undefined);
     });
 
     it('fetches multiple values', async () => {
@@ -409,6 +425,9 @@ describe('Cli', () => {
 
       process.stdin.push('\n');
       await expect(cli.prompt('...name=baz')).resolves.toEqual(['baz']);
+
+      process.stdin.push('\n');
+      await expect(cli.prompt('[...name]')).resolves.toEqual([]);
     });
 
     it('retries until it fetches mandatory single values', async () => {

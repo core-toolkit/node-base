@@ -157,7 +157,7 @@ module.exports = (process) => ({ Core: { Project, CliInterface } }) => {
       const supplied = args.slice(i, arg.rest ? undefined : i + 1)
         .concat(undefined)
         .map((v) => readArg(v, arg))
-        .filter(({ missing }, i) => !missing || !i)
+        .filter(({ missing, value }) => !missing || value !== undefined)
         .map(({ value }) => value);
 
       if (supplied[0] || arg.optional) {
